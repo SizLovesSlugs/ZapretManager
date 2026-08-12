@@ -14,6 +14,7 @@ import (
 	"zapret-manager/internal/dns"
 	"zapret-manager/internal/github"
 	"zapret-manager/internal/hosts"
+	"zapret-manager/internal/selfupdate"
 	"zapret-manager/internal/zapret"
 )
 
@@ -75,6 +76,7 @@ type State struct {
 	Progress         float64                `json:"progress"`
 	Message          string                 `json:"message"`
 	Error            string                 `json:"error"`
+	AppUpdateReady   bool                   `json:"appUpdateReady"`
 }
 
 type App struct {
@@ -99,6 +101,9 @@ type App struct {
 
 	// Once per process: clear foreign zapret/WinDivert and ensure TCP timestamps.
 	startPreflightDone bool
+
+	appUpdateReady bool
+	appUpdateNew   string
 }
 
 const (
@@ -107,6 +112,7 @@ const (
 )
 
 func New() *App {
+	selfupdate.Cleanup()
 	a := &App{gh: github.New(), cfg: loadConfig(), log: newFileLogger()}
 	cache := loadGHCache()
 	a.applyCache(cache)
@@ -137,6 +143,13 @@ func overlayLive(st State, a *App) State {
 	st.Progress = a.progress
 	st.Message = a.message
 	st.Error = a.err
+	if a.cfg.LastStrategy != "" {
+		st.Selected = a.cfg.LastStrategy
+	}
+	if a.cfg.LastGameStrategy != "" {
+		st.SelectedGame = zapret.ResolveGameStrategy(a.cfg.LastGameStrategy).ID
+	}
+	st.AppUpdateReady = a.appUpdateReady
 	return st
 }
 
@@ -203,7 +216,37 @@ func (a *App) Boot() (State, error) {
 		defer cancel()
 		a.bootWork(ctx)
 	}()
+	go a.selfUpdateWork()
 	return a.GetState(), nil
+}
+
+func (a *App) selfUpdateWork() {
+	time.Sleep(8 * time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Minute)
+	defer cancel()
+	path, err := selfupdate.Prepare(ctx, func() bool {
+		a.mu.Lock()
+		defer a.mu.Unlock()
+		return a.busy
+	})
+	if err != nil || path == "" {
+		return
+	}
+	a.mu.Lock()
+	a.appUpdateReady = true
+	a.appUpdateNew = path
+	a.mu.Unlock()
+}
+
+func (a *App) ApplyAppUpdate() error {
+	a.mu.Lock()
+	path := a.appUpdateNew
+	ready := a.appUpdateReady
+	a.mu.Unlock()
+	if !ready || path == "" {
+		return nil
+	}
+	return selfupdate.Apply(path)
 }
 
 func (a *App) bootWork(ctx context.Context) {
@@ -387,6 +430,7 @@ func (a *App) SelectStrategy(name string) (State, error) {
 	a.mu.Lock()
 	a.cfg.LastStrategy = name
 	_ = saveConfig(a.cfg)
+	a.invalidateStateCache()
 	a.mu.Unlock()
 
 	prev := zapret.QueryService()
@@ -411,6 +455,7 @@ func (a *App) SelectGameStrategy(id string) (State, error) {
 	a.mu.Lock()
 	a.cfg.LastGameStrategy = gs.ID
 	_ = saveConfig(a.cfg)
+	a.invalidateStateCache()
 	boost := a.cfg.IsGameBoost()
 	mainName := a.cfg.LastStrategy
 	a.mu.Unlock()
@@ -707,11 +752,11 @@ func (a *App) Start() (State, error) {
 		a.mu.Unlock()
 		if name == "" {
 			strats, _ := zapret.ListStrategies(dir)
-			if len(strats) == 0 {
+			name = zapret.PickDefault(strats)
+			if name == "" {
 				a.fail("Сначала дождитесь загрузки Zapret")
 				return
 			}
-			name = strats[0].Name
 			a.mu.Lock()
 			a.cfg.LastStrategy = name
 			_ = saveConfig(a.cfg)
@@ -926,7 +971,7 @@ func (a *App) strategyForRestart(dir, previous string) string {
 		}
 	}
 	if len(strats) > 0 {
-		return strats[0].Name
+		return zapret.PickDefault(strats)
 	}
 	return ""
 }
@@ -994,7 +1039,7 @@ func (a *App) snapshotFrom(svc zapret.ServiceState, strats []zapret.Strategy) St
 		st.Selected = st.Service.Strategy
 	}
 	if st.Selected == "" && len(st.Strategies) > 0 {
-		st.Selected = st.Strategies[0].Name
+		st.Selected = zapret.PickDefault(st.Strategies)
 	}
 	return st
 }

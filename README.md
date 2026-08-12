@@ -1,25 +1,30 @@
-# Zapret Manager
+# Zapret Manager by Siz (beta)
 
-Тёмный Windows‑менеджер для [Flowseal zapret](https://github.com/Flowseal/zapret-discord-youtube).  
-Одна кнопка — служба, стратегии, DNS и ускорение сервисов.
+Ускорь Dead by Daylight, YouTube, Discord, Telegram, Instagram, нейросети и прочее за пару кликов!
+Без лишних туннелей и бесплатно.
 
-**Made by [Siz Loves Slugs](https://github.com/SizLovesSlugs) · [Telegram](https://t.me/SizLovesSlugs)**
+Как юзать? [Скачай](https://github.com/SizLovesSlugs/ZapretManager/releases), запусти, включи.
+
+
+У разных провайдеров разные стратегии, поэтому протестируйте несколько и остановитесь на той, с которой стабильно работают нужные сервисы.
+Проект на стадии тестирования.
+
+** Вопросы или проблемы? Пиши в [Telegram](https://t.me/SizLovesSlugs)**
 
 ---
 
 ## Что умеет
 
-- Скачивает и ставит сборки zapret с GitHub (актуальная или закреплённая версия)
-- Включает / выключает службу `zapret` без лишнего пересоздания
+- Автоматом скачивает и ставит сборки zapret с GitHub (актуальная или выбранная вручную версия)
 - Переключает основные и игровые стратегии
-- Game Filter (UDP / TCP / все)
 - Ускорение Telegram Web, игр и сервисов через hosts
 - DNS: Cloudflare, Google, Yandex или системные — применяются при включении службы и откатываются при выключении
-- GeoHide‑прокси для части сервисов
-- Перед первым запуском убирает чужие zapret / WinDivert / GoodbyeDPI, чтобы не было конфликта
-- Тёмный интерфейс на WebView2, без белой вспышки при старте
+- GeoHide‑прокси для работы нейросетей
+- Перед первым запуском убирает другие zapret / WinDivert / GoodbyeDPI, чтобы не было конфликта
+- Красивый, приятный, понятный интерфейс
+- Сам проверяет релизы на GitHub и тихо обновляется, когда выходит новая версия
 
-После **Включить** окно можно закрыть — служба продолжит работать в фоне.
+После **Включения** приложение можно закрыть — служба продолжит работать в фоне.
 
 ## Требования
 
@@ -27,7 +32,9 @@
 - Права администратора (служба, hosts, DNS)
 - [Microsoft Edge WebView2 Runtime](https://developer.microsoft.com/microsoft-edge/webview2/) (обычно уже есть)
 
-## Сборка
+## Аудит и сборка (для тестирования и проверки)
+
+Будьте бдительны и проверяйте чужие проекты, мой не исключение.
 
 Ничего ставить заранее не нужно.
 
@@ -39,16 +46,14 @@
    или **Code → Download ZIP** и распакуйте.
 2. Запустите **`build.bat`**.
 
-Скрипт скачает portable **Go 1.25** в папку `.tools` (в git не попадает) и соберёт рядом:
+Скрипт скачает portable **Go 1.25** в папку `.tools` (в git не попадает) и соберёт рядом бинарник:
 
-`Zapret Manager 0.1.exe`
-
-Повторный запуск батника Go заново не качает.
+`Zapret Manager x.x.exe`
 
 Если Go уже установлен, можно так:
 
 ```bat
-go build -trimpath -ldflags "-H windowsgui -s -w" -o "Zapret Manager 0.1.exe" ./cmd/zapret-manager
+go build -trimpath -ldflags "-H windowsgui -s -w" -o "Zapret Manager 1.0 Beta.exe" ./cmd/zapret-manager
 ```
 
 ## Запуск
@@ -58,11 +63,11 @@ go build -trimpath -ldflags "-H windowsgui -s -w" -o "Zapret Manager 0.1.exe" ./
 
 ## Благодарности
 
-Огромное спасибо [Flowseal](https://github.com/flowseal) и [StressOzz](https://github.com/StressOzz) за стратегии и вклад в сообщество.
+Большое спасибо [bol-van](https://github.com/bol-van), [Flowseal](https://github.com/flowseal) и [StressOzz](https://github.com/StressOzz) за Zapret, стратегии и огромный вклад в сообщество!
 
 Проект не связан с авторами zapret официально: это отдельный менеджер поверх их сборок.
 
 ## Лицензия
 
-Исходники этого менеджера — как есть, без гарантий.  
+Исходники проекта — как есть.
 Zapret, WinDivert и стратегии принадлежат их авторам и распространяются на своих условиях.

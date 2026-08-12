@@ -79,6 +79,7 @@ func Run(a *app.App) error {
 	_ = w.Bind("getLogs", a.GetLogs)
 	_ = w.Bind("logError", a.LogError)
 	_ = w.Bind("openURL", admin.OpenURL)
+	_ = w.Bind("applyAppUpdate", a.ApplyAppUpdate)
 
 	w.Navigate("http://" + ln.Addr().String() + "/")
 	// Start background boot after UI navigation so the window can paint first.

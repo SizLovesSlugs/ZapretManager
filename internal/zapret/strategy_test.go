@@ -49,6 +49,23 @@ func TestShortName(t *testing.T) {
 	}
 }
 
+func TestPickDefault(t *testing.T) {
+	strats := []Strategy{
+		{Name: "general", ShortName: "general"},
+		{Name: "general (ALT2)", ShortName: "ALT2"},
+		{Name: "general (ALT11)", ShortName: "ALT11"},
+	}
+	if got := PickDefault(strats); got != "general (ALT11)" {
+		t.Fatalf("got %q", got)
+	}
+	if got := PickDefault(strats[:2]); got != "general" {
+		t.Fatalf("fallback %q", got)
+	}
+	if got := PickDefault(nil); got != "" {
+		t.Fatalf("empty %q", got)
+	}
+}
+
 func TestNaturalSort(t *testing.T) {
 	items := []Strategy{
 		{Name: "general (ALT10)"},

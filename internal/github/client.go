@@ -223,7 +223,7 @@ func (c *Client) Download(ctx context.Context, url, dest string, progress Progre
 	req.Header.Set("User-Agent", userAgent)
 	req.Header.Set("Accept", "*/*")
 	req.Header.Set("Accept-Language", "ru-RU,ru;q=0.9,en;q=0.8")
-	req.Header.Set("Referer", "https://github.com/"+DefaultRepo+"/releases")
+	req.Header.Set("Referer", c.site()+"/"+c.repo()+"/releases")
 
 	client := *c.HTTP
 	client.Timeout = 0

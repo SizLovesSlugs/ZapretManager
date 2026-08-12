@@ -589,6 +589,7 @@ input[type="search"]:focus { border-color: rgba(94, 233, 168, 0.45); }
 
 .overlay-logs { z-index: 40; }
 .overlay-help { z-index: 40; }
+.overlay-update { z-index: 50; }
 
 .modal {
   position: relative;
@@ -830,8 +831,27 @@ input[type="search"]:focus { border-color: rgba(94, 233, 168, 0.45); }
 .modal-action:hover { transform: translateY(-1px); background: rgba(94, 233, 168, 0.24); }
 
 .modal-help {
-  width: min(520px, calc(100vw - 40px));
+  width: min(680px, calc(100vw - 40px));
   max-height: min(640px, calc(100vh - 48px));
+}
+
+.modal-update {
+  width: min(400px, calc(100vw - 48px));
+  padding: 28px 26px 24px;
+  text-align: center;
+  max-height: none;
+}
+
+.modal-update h2 {
+  padding-right: 0;
+  font-size: 20px;
+}
+
+.modal-update p {
+  margin-top: 10px;
+  color: var(--muted);
+  font-size: 14px;
+  line-height: 1.45;
 }
 
 .help-body {

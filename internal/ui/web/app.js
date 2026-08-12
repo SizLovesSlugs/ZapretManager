@@ -299,9 +299,10 @@ function filteredStrategies() {
 }
 
 function syncChipClasses(svc) {
+  const running = svc.status === "running" || svc.status === "starting";
   $("strategies").querySelectorAll(".chip[data-name]").forEach((el) => {
     toggle(el, "selected", el.dataset.name === state.selected);
-    toggle(el, "current", el.dataset.name === svc.strategy);
+    toggle(el, "current", running && el.dataset.name === svc.strategy);
   });
 }
 
@@ -341,14 +342,20 @@ function renderStrategies(svc) {
   enterTimer = setTimeout(() => box.classList.remove("entering"), 450);
 }
 
+let selectSeq = 0;
+
 async function select(name) {
   if (!state || state.selected === name) return;
   state.selected = name;
   syncChipClasses(state.service || {});
+  const seq = ++selectSeq;
   try {
-    state = await call("selectStrategy", name);
+    const next = await call("selectStrategy", name);
+    if (seq !== selectSeq) return;
+    state = next;
     render();
   } catch (e) {
+    if (seq !== selectSeq) return;
     setText($("hint"), String(e));
     toggle($("hint"), "err", true);
   }
@@ -382,14 +389,20 @@ function renderGameStrategies(busy) {
   });
 }
 
+let selectGameSeq = 0;
+
 async function selectGame(id) {
   if (!state || state.selectedGame === id) return;
   state.selectedGame = id;
   renderGameStrategies(Boolean(state.busy));
+  const seq = ++selectGameSeq;
   try {
-    state = await call("selectGameStrategy", id);
+    const next = await call("selectGameStrategy", id);
+    if (seq !== selectGameSeq) return;
+    state = next;
     render();
   } catch (e) {
+    if (seq !== selectGameSeq) return;
     setText($("hint"), String(e));
     toggle($("hint"), "err", true);
     await refresh();
@@ -706,3 +719,29 @@ refresh();
 setInterval(() => {
   if (!document.hidden) refresh();
 }, 2500);
+
+(function watchAppUpdate() {
+  let shown = false;
+  async function tick() {
+    if (shown) return;
+    try {
+      const st = await call("getState");
+      if (st && st.appUpdateReady && !st.busy) {
+        shown = true;
+        state = st;
+        const el = $("overlayAppUpdate");
+        if (el) el.classList.remove("hidden");
+        setTimeout(async () => {
+          try {
+            await call("applyAppUpdate");
+          } catch (_) {
+            if (el) el.classList.add("hidden");
+          }
+        }, 2000);
+        return;
+      }
+    } catch (_) {}
+    setTimeout(tick, 1200);
+  }
+  setTimeout(tick, 5000);
+})();

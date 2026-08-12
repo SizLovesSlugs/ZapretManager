@@ -26,6 +26,21 @@ func ShortName(name string) string {
 	return name
 }
 
+const DefaultShortName = "ALT11"
+
+// PickDefault returns the ALT11 strategy when present, otherwise the first item.
+func PickDefault(strats []Strategy) string {
+	if len(strats) == 0 {
+		return ""
+	}
+	for _, s := range strats {
+		if strings.EqualFold(s.ShortName, DefaultShortName) || strings.EqualFold(s.Name, DefaultShortName) {
+			return s.Name
+		}
+	}
+	return strats[0].Name
+}
+
 var continuationRe = regexp.MustCompile(`\^\s*\n`)
 
 func ListStrategies(root string) ([]Strategy, error) {
