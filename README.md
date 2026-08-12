@@ -3,13 +3,13 @@
 Ускорь Dead by Daylight, YouTube, Discord, Telegram, Instagram, нейросети и прочее за пару кликов!
 Без лишних туннелей и бесплатно.
 
-Как юзать? [Скачай](https://github.com/SizLovesSlugs/ZapretManager/releases), запусти, включи.
+Как юзать? [Скачай](https://github.com/SizLovesSlugs/ZapretManager/releases/latest), запусти, включи.
 
 
 У разных провайдеров разные стратегии, поэтому протестируйте несколько и остановитесь на той, с которой стабильно работают нужные сервисы.
 Проект на стадии тестирования.
 
-** Вопросы или проблемы? Пиши в [Telegram](https://t.me/SizLovesSlugs)**
+**Вопросы или проблемы? Пиши в [Telegram](https://t.me/SizLovesSlugs)**
 
 ---
 
@@ -59,7 +59,7 @@ go build -trimpath -ldflags "-H windowsgui -s -w" -o "Zapret Manager 1.0 Beta.ex
 ## Запуск
 
 Запускайте exe **от имени администратора**.  
-Антивирус иногда ругается на `winws` / WinDivert — это ожидаемо для zapret.
+Антивирус иногда ругается на `winws` / WinDivert — это ожидаемо, не все любят модификацию сетевого трафика.
 
 ## Благодарности
 
