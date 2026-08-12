@@ -1,19 +1,27 @@
+<div align="center">
+
 # Zapret Manager by Siz (beta)
 
-Ускорь Dead by Daylight, YouTube, Discord, Telegram, Instagram, нейросети и прочее за пару кликов!
+![Platform](https://img.shields.io/badge/Platform-Windows-0078D6?logo=windows&logoColor=white)
+![Architecture](https://img.shields.io/badge/Architecture-X86-6E7681)
+![Status](https://img.shields.io/badge/Status-Active-brightgreen)
+[![GitHub last commit](https://img.shields.io/github/last-commit/SizLovesSlugs/ZapretManager)](https://github.com/SizLovesSlugs/ZapretManager/commits/main)
+
+Ускорь Dead by Daylight, YouTube, Discord, Telegram, Instagram, нейросети и прочее за пару кликов!  
 Без лишних туннелей и бесплатно.
 
 Как юзать? [Скачай](https://github.com/SizLovesSlugs/ZapretManager/releases/latest), запусти, включи.
 
+</div>
 
-У разных провайдеров разные стратегии, поэтому протестируйте несколько и остановитесь на той, с которой стабильно работают нужные сервисы.
+У разных провайдеров разные стратегии, поэтому протестируйте несколько и остановитесь на той, с которой стабильно работают нужные сервисы.  
 Проект на стадии тестирования.
 
 **Вопросы или проблемы? Пиши в [Telegram](https://t.me/SizLovesSlugs)**
 
 ---
 
-## Что умеет
+## ✨ Что умеет
 
 - Автоматом скачивает и ставит сборки zapret с GitHub (актуальная или выбранная вручную версия)
 - Переключает основные и игровые стратегии
@@ -26,15 +34,16 @@
 
 После **Включения** приложение можно закрыть — служба продолжит работать в фоне.
 
-## Требования
+## 📋 Требования
 
 - Windows 10 / 11 x64
 - Права администратора (служба, hosts, DNS)
 - [Microsoft Edge WebView2 Runtime](https://developer.microsoft.com/microsoft-edge/webview2/) (обычно уже есть)
 
-## Аудит и сборка (для тестирования и проверки)
+## 🔍 Аудит и сборка (для тестирования и проверки)
 
-Будьте бдительны и проверяйте чужие проекты, мой не исключение.
+> [!IMPORTANT]
+> Будьте бдительны и проверяйте чужие проекты, мой не исключение.
 
 Ничего ставить заранее не нужно.
 
@@ -56,19 +65,21 @@
 go build -trimpath -ldflags "-H windowsgui -s -w" -o "Zapret Manager 1.0 Beta.exe" ./cmd/zapret-manager
 ```
 
-## Запуск
+## 🚀 Запуск
 
-Запускайте exe **от имени администратора**.  
-Антивирус иногда ругается на `winws` / WinDivert — это ожидаемо, не все любят модификацию сетевого трафика.
+Запускайте exe **от имени администратора**.
 
-## Благодарности
+> [!WARNING]
+> Антивирус иногда ругается на `winws` / WinDivert — это ожидаемо, не все любят модификацию сетевого трафика.
 
-Большое спасибо [bol-van](https://github.com/bol-van), [Flowseal](https://github.com/flowseal) и [StressOzz](https://github.com/StressOzz) за Zapret, стратегии и огромный вклад в сообщество!
+## 🩷 Благодарности
+
+Большое спасибо [bol-van](https://github.com/bol-van), [Flowseal](https://github.com/flowseal) и [StressOzz](https://github.com/StressOzz) за Zapret, стратегии и огромный вклад в сообщество!  
 Спасибо Cursor и Grok 4.6 за возможность в свободное время быстро реализовывать классные некомерческие проекты.
 
 Проект не связан с авторами zapret официально: это отдельный менеджер поверх их сборок.
 
-## Лицензия
+## ⚖️ Лицензия
 
-Исходники проекта — как есть.
+Исходники проекта — как есть.  
 Zapret, WinDivert и стратегии принадлежат их авторам и распространяются на своих условиях.
