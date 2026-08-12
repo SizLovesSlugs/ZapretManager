@@ -34,7 +34,7 @@ $tools = Join-Path $root ".tools"
 $goRoot = Join-Path $tools "go"
 $goExe = Join-Path $goRoot "bin\go.exe"
 $zipPath = Join-Path $env:TEMP $goZipName
-$exeName = "Zapret Manager 1.0 Beta.exe"
+$exeName = "ZapretManager-1.0.exe"
 
 Write-Host ""
 Write-Host "  Zapret Manager — сборка" -ForegroundColor White

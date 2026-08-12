@@ -65,12 +65,12 @@
 
 Скрипт скачает portable **Go 1.25** в папку `.tools` (в git не попадает) и соберёт рядом бинарник:
 
-`Zapret Manager x.x.exe`
+`ZapretManager-x.x.exe`
 
 Если Go уже установлен, можно так:
 
 ```bat
-go build -trimpath -ldflags "-H windowsgui -s -w" -o "Zapret Manager 1.0 Beta.exe" ./cmd/zapret-manager
+go build -trimpath -ldflags "-H windowsgui -s -w" -o ZapretManager-1.0.exe ./cmd/zapret-manager
 ```
 
 ## 🩷 Благодарности

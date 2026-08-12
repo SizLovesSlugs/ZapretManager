@@ -55,20 +55,14 @@ func conventionalExeURLs(site, repo, tag string) []string {
 	if ver == "" {
 		return nil
 	}
-	spaced := version.ExeNameFor(ver)
-	names := []string{
-		spaced,
-		strings.ReplaceAll(spaced, " ", "."),
-	}
+	name := version.ExeNameFor(ver)
 	tags := []string{ver, "v" + ver}
 	if dashed := strings.ReplaceAll(ver, " ", "-"); dashed != ver {
 		tags = append(tags, dashed, "v"+dashed)
 	}
 	var out []string
-	for _, tag := range tags {
-		for _, name := range names {
-			out = append(out, site+"/"+repo+"/releases/download/"+tag+"/"+url.PathEscape(name))
-		}
+	for _, t := range tags {
+		out = append(out, site+"/"+repo+"/releases/download/"+t+"/"+url.PathEscape(name))
 	}
 	return uniqueURLs(out)
 }

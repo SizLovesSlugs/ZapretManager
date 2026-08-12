@@ -24,13 +24,13 @@ func TestCompare(t *testing.T) {
 }
 
 func TestExeNameFor(t *testing.T) {
-	if got := ExeNameFor("1.0-Beta"); got != "Zapret Manager 1.0 Beta.exe" {
+	if got := ExeNameFor("1.0"); got != "ZapretManager-1.0.exe" {
 		t.Fatalf("tag: %q", got)
 	}
-	if got := ExeNameFor("v1.0 Beta"); got != "Zapret Manager 1.0 Beta.exe" {
-		t.Fatalf("spaced: %q", got)
+	if got := ExeNameFor("v1.0"); got != "ZapretManager-1.0.exe" {
+		t.Fatalf("v-prefix: %q", got)
 	}
-	if got := ExeName(); got != "Zapret Manager 1.0 Beta.exe" {
+	if got := ExeName(); got != "ZapretManager-1.0.exe" {
 		t.Fatalf("current: %q", got)
 	}
 }
