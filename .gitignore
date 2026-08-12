@@ -1,0 +1,11 @@
+*.exe
+*.zip
+*.rar
+*.tar.gz
+dist/
+cache/
+.idea/
+.vscode/
+.tools/
+*.test
+*.out

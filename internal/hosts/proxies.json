@@ -1,0 +1,20 @@
+{
+  "proxies": [
+    {
+      "id": "geohide-1",
+      "name": "GeoHide 1",
+      "ip": "95.182.120.241",
+      "default": true
+    },
+    {
+      "id": "geohide-2",
+      "name": "GeoHide 2",
+      "ip": "45.155.204.190"
+    },
+    {
+      "id": "geohide-3",
+      "name": "GeoHide 3",
+      "ip": "37.230.192.51"
+    }
+  ]
+}

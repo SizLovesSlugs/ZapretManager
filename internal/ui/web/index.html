@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="color-scheme" content="dark" />
+  <title>Zapret Manager</title>
+  <style>
+    html, body {
+      background: #0a0b0e;
+      color: #f4f6f8;
+      margin: 0;
+      min-height: 100%;
+    }
+  </style>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <div class="glow glow-a"></div>
+  <div class="glow glow-b"></div>
+  <main>
+    <header>
+      <h1>Zapret</h1>
+      <a id="byLink" class="by" href="https://github.com/SizLovesSlugs/ZapretManager" target="_blank" rel="noopener noreferrer">Made by Siz Loves Slugs &lt;3</a>
+    </header>
+
+    <div class="layout">
+      <section class="col col-left">
+        <div class="hero">
+          <span id="statusDot" class="dot"></span>
+          <div class="status-copy">
+            <div class="status-title-wrap">
+              <p id="statusTitle" class="status-title miss">—</p>
+            </div>
+            <p id="statusSub" class="status-sub"></p>
+          </div>
+        </div>
+
+        <section class="card version-card">
+          <p class="label">Версия Zapret</p>
+          <button id="versionBtn" class="version-btn" type="button">
+            <span>
+              <strong id="versionLabel">Актуальная</strong>
+              <small id="versionNum"></small>
+            </span>
+            <i class="chevron"></i>
+          </button>
+          <div id="versionMenu" class="menu hidden">
+            <div id="versionMenuList" class="menu-scroll"></div>
+          </div>
+          <div id="progressWrap" class="progress hidden">
+            <div id="progressBar"></div>
+          </div>
+        </section>
+
+        <button id="tgBoost" class="toggle-row on" type="button" aria-pressed="true">
+          <span class="toggle-label">Ускорить Telegram Web</span>
+          <span class="switch" aria-hidden="true"><i></i></span>
+        </button>
+
+        <button id="gameBoost" class="toggle-row on" type="button" aria-pressed="true">
+          <span class="toggle-label">Ускорить игры</span>
+          <span class="switch" aria-hidden="true"><i></i></span>
+        </button>
+
+        <button id="btnExtra" class="extra" type="button">Дополнительно</button>
+        <button id="btnHelp" class="extra help-btn" type="button">Помощь</button>
+
+        <div class="actions">
+          <button id="btnPower" class="power on" type="button">Включить</button>
+          <button id="btnRemove" class="link" type="button">Удалить службу</button>
+        </div>
+      </section>
+
+      <section class="col col-right">
+        <section class="card list-card main-strat">
+          <div class="row">
+            <p class="label">Основная стратегия</p>
+            <input id="search" type="search" placeholder="Поиск" autocomplete="off" />
+          </div>
+          <div class="chips-wrap">
+            <div id="strategies" class="chips"></div>
+          </div>
+        </section>
+
+        <section id="gameStratCard" class="card list-card game-strat">
+          <div class="row">
+            <p class="label">Игровая стратегия</p>
+          </div>
+          <div class="chips-wrap">
+            <div id="gameStrategies" class="chips"></div>
+          </div>
+        </section>
+      </section>
+    </div>
+
+    <p id="hint" class="hint"></p>
+  </main>
+
+  <div id="overlayExtra" class="overlay hidden">
+    <div class="modal" role="dialog" aria-labelledby="extraTitle">
+      <button id="closeExtra" class="modal-close" type="button" aria-label="Закрыть"></button>
+      <div class="modal-scroll">
+        <h2 id="extraTitle">Дополнительно</h2>
+        <p class="modal-lead">Настройки и диагностика</p>
+
+        <section class="modal-block boost-block">
+          <p class="label">Ускорение сервисов</p>
+          <p class="modal-hint">Статические DNS записи через hosts.</p>
+          <div class="boost-wrap">
+            <div id="serviceBoosts" class="boost-list"></div>
+          </div>
+        </section>
+
+        <section class="modal-block">
+          <p class="label">DNS серверы</p>
+          <p class="modal-hint">Меняются при включении службы. Вернутся на дефолтные при отключении/удалении.</p>
+          <div id="dnsProfile" class="pills dns-pills">
+            <button data-id="cloudflare" type="button">Cloudflare</button>
+            <button data-id="google" type="button">Google</button>
+            <button data-id="yandex" type="button">Yandex</button>
+            <button data-id="system" type="button">Системные DNS</button>
+          </div>
+        </section>
+
+        <section class="modal-block proxy-block">
+          <p class="label">GeoHide прокси</p>
+          <p class="modal-hint">IP прокси сервера для AI / Spotify / Twitch и других сервисов в hosts</p>
+          <button id="proxyBtn" class="proxy-btn" type="button">
+            <span>
+              <strong id="proxyName">GeoHide 1</strong>
+              <small id="proxyIP">95.182.120.241</small>
+            </span>
+            <i class="chevron"></i>
+          </button>
+          <div id="proxyMenu" class="menu proxy-menu hidden">
+            <div id="proxyMenuList" class="menu-scroll"></div>
+          </div>
+        </section>
+
+        <section class="modal-block">
+          <p class="label">Game Filter</p>
+          <p class="modal-hint">Иногда помогает с играми</p>
+          <div id="gameFilter" class="pills">
+            <button data-mode="off" type="button">Выкл</button>
+            <button data-mode="udp" type="button">UDP</button>
+            <button data-mode="tcp" type="button">TCP</button>
+            <button data-mode="all" type="button">Все</button>
+          </div>
+        </section>
+
+        <button id="btnShowLogs" class="modal-action" type="button">Показать логи</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="overlayLogs" class="overlay overlay-logs hidden">
+    <div class="modal modal-logs" role="dialog" aria-labelledby="logsTitle">
+      <button id="closeLogs" class="modal-close" type="button" aria-label="Закрыть"></button>
+      <div class="modal-scroll">
+        <h2 id="logsTitle">Логи</h2>
+        <p class="modal-lead">Ошибки приложения</p>
+        <p id="logsPath" class="modal-path"></p>
+        <div id="logList" class="log-list"></div>
+      </div>
+    </div>
+  </div>
+
+  <div id="overlayHelp" class="overlay overlay-help hidden">
+    <div class="modal modal-help" role="dialog" aria-labelledby="helpTitle">
+      <button id="closeHelp" class="modal-close" type="button" aria-label="Закрыть"></button>
+      <div class="modal-scroll">
+        <h2 id="helpTitle">Помощь</h2>
+
+        <div class="help-body">
+          <p>
+            Кнопка <strong>Включить</strong> запускает фоновую службу Zapret.
+            После этого приложение можно закрыть — ускорение продолжит работать в фоне.
+          </p>
+          <p>
+            У разных провайдеров помогают разные стратегии. Попробуйте несколько
+            основных стратегий и выберите ту, с которой у вас стабильнее работают нужные сервисы.
+          </p>
+          <p>
+            Если остались вопросы или что-то не работает — напишите разработчику.
+          </p>
+        </div>
+
+        <button id="btnHelpTelegram" class="modal-action" type="button">Связаться в Telegram</button>
+
+        <p class="help-thanks">
+          Огромное спасибо
+          <a class="help-link" href="https://github.com/flowseal" data-url="https://github.com/flowseal">Flowseal</a>
+          и
+          <a class="help-link" href="https://github.com/StressOzz" data-url="https://github.com/StressOzz">StressOzz</a>
+          за стратегии и огромный вклад в сообщество.
+        </p>
+      </div>
+    </div>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
