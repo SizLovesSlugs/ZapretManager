@@ -49,24 +49,28 @@ func parseExeDownloadURLs(page, site, repo string) []string {
 	return append(preferred, other...)
 }
 
-func conventionalExeURLs(site, repo, version string) []string {
+func conventionalExeURLs(site, repo, tag string) []string {
 	site = strings.TrimRight(site, "/")
-	ver := strings.TrimPrefix(strings.TrimSpace(version), "v")
+	ver := strings.TrimPrefix(strings.TrimSpace(tag), "v")
 	if ver == "" {
 		return nil
 	}
+	spaced := version.ExeNameFor(ver)
 	names := []string{
-		"Zapret Manager " + ver + ".exe",
-		"ZapretManager-" + ver + ".exe",
+		spaced,
+		strings.ReplaceAll(spaced, " ", "."),
 	}
 	tags := []string{ver, "v" + ver}
+	if dashed := strings.ReplaceAll(ver, " ", "-"); dashed != ver {
+		tags = append(tags, dashed, "v"+dashed)
+	}
 	var out []string
 	for _, tag := range tags {
 		for _, name := range names {
 			out = append(out, site+"/"+repo+"/releases/download/"+tag+"/"+url.PathEscape(name))
 		}
 	}
-	return out
+	return uniqueURLs(out)
 }
 
 func uniqueURLs(in []string) []string {
@@ -101,13 +105,13 @@ func (c *Client) LatestManagerRelease(ctx context.Context, current string) (stri
 		return "", nil, nil
 	}
 
-	urls := parseExeDownloadURLs(htmlPage, c.site(), c.repo())
-	for _, assetTag := range []string{tag, "v" + strings.TrimPrefix(tag, "v")} {
+	urls := conventionalExeURLs(c.site(), c.repo(), tag)
+	urls = append(urls, parseExeDownloadURLs(htmlPage, c.site(), c.repo())...)
+	for _, assetTag := range uniqueURLs([]string{tag, "v" + strings.TrimPrefix(tag, "v"), strings.ReplaceAll(tag, " ", "-")}) {
 		assetsPage, _, assetsErr := c.getHTML(ctx, c.pageURL("/releases/expanded_assets/"+assetTag))
 		if assetsErr == nil {
 			urls = append(urls, parseExeDownloadURLs(assetsPage, c.site(), c.repo())...)
 		}
 	}
-	urls = append(urls, conventionalExeURLs(c.site(), c.repo(), tag)...)
 	return tag, uniqueURLs(urls), nil
 }

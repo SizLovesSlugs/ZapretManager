@@ -13,11 +13,24 @@ func TestCompare(t *testing.T) {
 		{"0.1", "0.2", -1},
 		{"0.1.9", "0.2", -1},
 		{"1.0", "0.9", 1},
+		{"1.0 Beta", "1.0-Beta", 0},
 		{"", "0.1", -1},
 	}
 	for _, tc := range cases {
 		if got := Compare(tc.a, tc.b); got != tc.want {
 			t.Fatalf("Compare(%q, %q) = %d, want %d", tc.a, tc.b, got, tc.want)
 		}
+	}
+}
+
+func TestExeNameFor(t *testing.T) {
+	if got := ExeNameFor("1.0-Beta"); got != "Zapret Manager 1.0 Beta.exe" {
+		t.Fatalf("tag: %q", got)
+	}
+	if got := ExeNameFor("v1.0 Beta"); got != "Zapret Manager 1.0 Beta.exe" {
+		t.Fatalf("spaced: %q", got)
+	}
+	if got := ExeName(); got != "Zapret Manager 1.0 Beta.exe" {
+		t.Fatalf("current: %q", got)
 	}
 }
