@@ -37,7 +37,7 @@ if not exist "%GOEXE%" (
   )
   if not exist "!ZIP!" (
     echo  Не удалось скачать Go. Проверьте интернет и повторите.
-    exit /b 1
+    goto :hold
   )
 
   echo  Распаковываю Go в .tools\go ...
@@ -45,14 +45,14 @@ if not exist "%GOEXE%" (
   tar.exe -xf "!ZIP!" -C "%TOOLS%"
   if errorlevel 1 (
     echo  Не удалось распаковать архив Go.
-    exit /b 1
+    goto :hold
   )
   del /f /q "!ZIP!" 2>nul
 )
 
 if not exist "%GOEXE%" (
   echo  go.exe не найден после установки: %GOEXE%
-  exit /b 1
+  goto :hold
 )
 
 set "PATH=%GOROOT%\bin;%PATH%"
@@ -64,12 +64,16 @@ echo  Компилирую %EXE_NAME% ...
 if errorlevel 1 (
   echo.
   echo  Сборка не удалась.
-  exit /b 1
+  goto :hold
 )
 
 echo.
 echo  Готово: %CD%\%EXE_NAME%
 echo  Запускайте от имени администратора. Нужен Microsoft Edge WebView2 Runtime.
 echo.
+
+:hold
+echo.
+pause
 endlocal
 exit /b 0
