@@ -5,6 +5,7 @@ import (
 	"bytes"
 	"io"
 	"os"
+	"path/filepath"
 	"strings"
 	"sync"
 	"time"
@@ -57,6 +58,33 @@ func (l *fileLogger) Error(msg string) {
 	}
 	_, _ = f.WriteString(line)
 	_ = f.Close()
+}
+
+func (l *fileLogger) Clear() error {
+	if l == nil {
+		return nil
+	}
+	l.mu.Lock()
+	defer l.mu.Unlock()
+	dir := filepath.Dir(l.path)
+	entries, err := os.ReadDir(dir)
+	if err != nil {
+		if os.IsNotExist(err) {
+			return nil
+		}
+		return err
+	}
+	for _, e := range entries {
+		_ = os.RemoveAll(filepath.Join(dir, e.Name()))
+	}
+	if err := os.MkdirAll(dir, 0o755); err != nil {
+		return err
+	}
+	f, err := os.Create(l.path)
+	if err != nil {
+		return err
+	}
+	return f.Close()
 }
 
 func (l *fileLogger) View() LogsView {

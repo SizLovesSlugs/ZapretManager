@@ -623,6 +623,10 @@ input[type="search"]:focus { border-color: rgba(94, 233, 168, 0.45); }
   flex-direction: column;
 }
 
+.modal-logs .modal-action {
+  flex-shrink: 0;
+}
+
 .modal h2 {
   font-size: 22px;
   font-weight: 650;

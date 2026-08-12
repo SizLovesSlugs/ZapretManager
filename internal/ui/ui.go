@@ -77,6 +77,7 @@ func Run(a *app.App) error {
 	_ = w.Bind("stopZapret", a.Stop)
 	_ = w.Bind("removeZapret", a.Remove)
 	_ = w.Bind("getLogs", a.GetLogs)
+	_ = w.Bind("clearLogs", a.ClearLogs)
 	_ = w.Bind("logError", a.LogError)
 	_ = w.Bind("openURL", admin.OpenURL)
 	_ = w.Bind("applyAppUpdate", a.ApplyAppUpdate)

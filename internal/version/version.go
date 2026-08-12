@@ -6,10 +6,10 @@ import (
 )
 
 // Version is the Zapret Manager app version shown in the window title.
-const Version = "1.0"
+const Version = "1.1"
 
 // FileVersion is the 4-part Windows VERSIONINFO numeric form.
-var FileVersion = [4]uint16{1, 0, 0, 0}
+var FileVersion = [4]uint16{1, 1, 0, 0}
 
 func Title() string {
 	return "Zapret Manager " + Version

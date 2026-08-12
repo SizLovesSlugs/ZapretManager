@@ -1,6 +1,8 @@
 package app
 
 import (
+	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 	"time"
@@ -32,5 +34,21 @@ func TestParseLogEntriesNewestFirst(t *testing.T) {
 	}
 	if got[0].Message != "second" || got[1].Message != "first" {
 		t.Fatalf("%+v", got)
+	}
+}
+
+func TestClearLogs(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, "app.log")
+	if err := os.WriteFile(path, []byte("2026-08-12 20:00:00 ERROR keep-me\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	l := &fileLogger{path: path}
+	if err := l.Clear(); err != nil {
+		t.Fatal(err)
+	}
+	view := l.View()
+	if len(view.Entries) != 0 {
+		t.Fatalf("%+v", view.Entries)
 	}
 }

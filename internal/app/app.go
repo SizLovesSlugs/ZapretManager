@@ -1079,6 +1079,15 @@ func (a *App) GetLogs() LogsView {
 	return a.log.View()
 }
 
+func (a *App) ClearLogs() (LogsView, error) {
+	if a.log != nil {
+		if err := a.log.Clear(); err != nil {
+			return a.GetLogs(), err
+		}
+	}
+	return a.GetLogs(), nil
+}
+
 func (a *App) LogError(msg string) {
 	a.recordError(msg)
 }

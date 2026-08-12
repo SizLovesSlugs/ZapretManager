@@ -557,6 +557,17 @@ $("closeLogs").onclick = () => toggle($("overlayLogs"), "hidden", true);
 $("overlayLogs").onclick = (e) => {
   if (e.target === $("overlayLogs")) toggle($("overlayLogs"), "hidden", true);
 };
+$("btnClearLogs").onclick = async (e) => {
+  e.stopPropagation();
+  try {
+    await call("clearLogs");
+    await renderLogs();
+  } catch (err) {
+    setText($("hint"), String(err));
+    toggle($("hint"), "err", true);
+    reportError(err);
+  }
+};
 
 $("closeHelp").onclick = () => toggle($("overlayHelp"), "hidden", true);
 $("overlayHelp").onclick = (e) => {
