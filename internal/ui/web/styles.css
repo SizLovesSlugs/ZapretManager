@@ -613,6 +613,15 @@ input[type="search"]:focus { border-color: rgba(94, 233, 168, 0.45); }
   padding: 24px 22px 20px;
 }
 
+#overlayExtra .modal-scroll {
+  padding: 0;
+  scrollbar-gutter: stable both-edges;
+}
+
+#overlayExtra .modal-scroll-inner {
+  padding: 24px 24px 20px;
+}
+
 .modal-logs {
   width: min(780px, 100%);
   max-height: min(680px, calc(100vh - 40px));
@@ -833,6 +842,17 @@ input[type="search"]:focus { border-color: rgba(94, 233, 168, 0.45); }
 }
 
 .modal-action:hover { transform: translateY(-1px); background: rgba(94, 233, 168, 0.24); }
+
+.modal-action.muted {
+  background: rgba(255, 255, 255, 0.06);
+  color: #9aa3b2;
+  border-color: rgba(255, 255, 255, 0.1);
+}
+
+.modal-action.muted:hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: var(--fg);
+}
 
 .modal-help {
   width: min(680px, calc(100vw - 40px));

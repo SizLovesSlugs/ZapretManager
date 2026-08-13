@@ -18,8 +18,16 @@ func Cleanup() {
 	if err != nil {
 		return
 	}
+	dir := filepath.Dir(exe)
 	_ = os.Remove(exe + ".old")
 	_ = os.Remove(exe + ".new")
+	_ = os.Remove(exe + ".part")
+	for _, pattern := range []string{"ZapretManager-*.exe.old", "ZapretManager-*.exe.new", "ZapretManager-*.exe.part"} {
+		matches, _ := filepath.Glob(filepath.Join(dir, pattern))
+		for _, m := range matches {
+			_ = os.Remove(m)
+		}
+	}
 }
 
 func CanCheck() bool {
@@ -60,7 +68,7 @@ func waitNotBusy(ctx context.Context, busy func() bool) error {
 }
 
 // Prepare silently checks GitHub and downloads a newer manager exe next to the running file.
-// Returns the path to the .new file, or empty if nothing to apply.
+// The downloaded file is named for the new version, e.g. ZapretManager-1.1.exe.
 func Prepare(ctx context.Context, busy func() bool) (string, error) {
 	if !CanCheck() {
 		return "", nil
@@ -73,32 +81,47 @@ func Prepare(ctx context.Context, busy func() bool) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	dest := exe + ".new"
-	_ = os.Remove(dest)
 
 	c := github.NewManager()
-	_, urls, err := c.LatestManagerRelease(ctx, version.Version)
-	if err != nil || len(urls) == 0 {
+	tag, urls, err := c.LatestManagerRelease(ctx, version.Version)
+	if err != nil {
 		return "", err
+	}
+	if tag == "" || len(urls) == 0 {
+		return "", nil
 	}
 
 	if err := waitNotBusy(ctx, busy); err != nil {
 		return "", err
 	}
 
+	dest := filepath.Join(filepath.Dir(exe), version.ExeNameFor(tag))
+	if strings.EqualFold(filepath.Clean(dest), filepath.Clean(exe)) {
+		dest = exe + ".new"
+	}
+	tmp := dest + ".part"
+	_ = os.Remove(tmp)
+	_ = os.Remove(dest)
+
 	var last error
 	for _, u := range urls {
 		if err := ctx.Err(); err != nil {
 			return "", err
 		}
-		if err := c.Download(ctx, u, dest, nil); err != nil {
+		if err := c.Download(ctx, u, tmp, nil); err != nil {
 			last = err
-			_ = os.Remove(dest)
+			_ = os.Remove(tmp)
 			continue
 		}
-		if err := verifyPE(dest); err != nil {
+		if err := verifyPE(tmp); err != nil {
 			last = err
-			_ = os.Remove(dest)
+			_ = os.Remove(tmp)
+			continue
+		}
+		_ = os.Remove(dest)
+		if err := os.Rename(tmp, dest); err != nil {
+			last = err
+			_ = os.Remove(tmp)
 			continue
 		}
 		return dest, nil

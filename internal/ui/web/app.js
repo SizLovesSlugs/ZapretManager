@@ -141,6 +141,7 @@ function render() {
   setText(power, running ? "Выключить" : "Включить");
   setClass(power, "power " + (running ? "off" : "on"));
   $("btnRemove").disabled = busy || key === "missing";
+  toggle($("btnRemove"), "hidden", !state.installed || key === "missing");
   $("versionBtn").disabled = busy;
   const tg = $("tgBoost");
   const tgOn = state.telegramWebBoost !== false;

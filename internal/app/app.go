@@ -221,21 +221,27 @@ func (a *App) Boot() (State, error) {
 }
 
 func (a *App) selfUpdateWork() {
-	time.Sleep(8 * time.Second)
-	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Minute)
-	defer cancel()
-	path, err := selfupdate.Prepare(ctx, func() bool {
+	busy := func() bool {
 		a.mu.Lock()
 		defer a.mu.Unlock()
 		return a.busy
-	})
-	if err != nil || path == "" {
-		return
 	}
-	a.mu.Lock()
-	a.appUpdateReady = true
-	a.appUpdateNew = path
-	a.mu.Unlock()
+	for attempt := 0; attempt < 3; attempt++ {
+		time.Sleep(5 * time.Second)
+		ctx, cancel := context.WithTimeout(context.Background(), 90*time.Second)
+		path, err := selfupdate.Prepare(ctx, busy)
+		cancel()
+		if path != "" {
+			a.mu.Lock()
+			a.appUpdateReady = true
+			a.appUpdateNew = path
+			a.mu.Unlock()
+			return
+		}
+		if err == nil {
+			return
+		}
+	}
 }
 
 func (a *App) ApplyAppUpdate() error {
