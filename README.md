@@ -14,7 +14,7 @@
 
 </div>
 
-<img width="1084" height="751" alt="image" src="https://github.com/user-attachments/assets/19c30b4d-c83e-400e-a054-5c13baa816a3" />
+<img width="1109" height="769" alt="image" src="https://github.com/user-attachments/assets/5ffd84ea-5366-4a0b-8bd2-2359dd3f1b33" />
 
 У разных провайдеров разные стратегии, поэтому протестируйте несколько и остановитесь на той, с которой стабильно работают нужные сервисы.  
 Проект на стадии тестирования.
