@@ -15,7 +15,7 @@
 ![Status](https://img.shields.io/badge/Status-Active-brightgreen)
 [![GitHub last commit](https://img.shields.io/github/last-commit/SizLovesSlugs/ZapretManager)](https://github.com/SizLovesSlugs/ZapretManager/commits/main)
 
-Ускорь Dead by Daylight, YouTube, Discord, Telegram, Instagram, нейросети и прочее за пару кликов!  
+Ускорь Dead by Daylight, YouTube, Discord, Telegram, Instagram, нейросети, Rocket League и прочее за пару кликов!  
 Без лишних туннелей и бесплатно.
 
 **Как юзать? [Скачай](https://github.com/SizLovesSlugs/ZapretManager/releases/latest), запусти, включи.**
