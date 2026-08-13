@@ -1,7 +1,6 @@
 const $ = (id) => document.getElementById(id);
 
 let state = null;
-let query = "";
 let menuOpen = false;
 let proxyMenuOpen = false;
 let lastStratListKey = "";
@@ -292,13 +291,6 @@ function renderMenu() {
   });
 }
 
-function filteredStrategies() {
-  const q = query;
-  return (state.strategies || []).filter((s) => {
-    return s.name.toLowerCase().includes(q) || (s.shortName || "").toLowerCase().includes(q);
-  });
-}
-
 function syncChipClasses(svc) {
   const running = svc.status === "running" || svc.status === "starting";
   $("strategies").querySelectorAll(".chip[data-name]").forEach((el) => {
@@ -309,8 +301,8 @@ function syncChipClasses(svc) {
 
 function renderStrategies(svc) {
   const box = $("strategies");
-  const items = filteredStrategies();
-  const listKey = [state.installed, query, items.map((s) => s.name).join("\n")].join("|");
+  const items = state.strategies || [];
+  const listKey = [state.installed, items.map((s) => s.name).join("\n")].join("|");
 
   if (listKey === lastStratListKey) {
     syncChipClasses(svc);
@@ -323,7 +315,7 @@ function renderStrategies(svc) {
     return;
   }
   if (!items.length) {
-    box.innerHTML = `<span class="chip empty">Ничего не найдено</span>`;
+    box.innerHTML = `<span class="chip empty">Нет стратегий</span>`;
     return;
   }
 
@@ -694,11 +686,6 @@ function reportError(err) {
     if (typeof logError === "function") logError(msg);
   } catch (_) {}
 }
-
-$("search").oninput = (e) => {
-  query = e.target.value.trim().toLowerCase();
-  if (state) renderStrategies(state.service || {});
-};
 
 document.querySelectorAll("#gameFilter button").forEach((b) => {
   b.onclick = async () => {

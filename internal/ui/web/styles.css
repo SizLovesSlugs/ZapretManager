@@ -372,19 +372,6 @@ h1 {
   font-size: 13px;
 }
 
-input[type="search"] {
-  width: 150px;
-  background: rgba(255, 255, 255, 0.03);
-  border: 1px solid var(--line);
-  border-radius: 999px;
-  color: var(--fg);
-  padding: 6px 12px;
-  outline: none;
-  transition: border-color 0.2s ease;
-}
-
-input[type="search"]:focus { border-color: rgba(94, 233, 168, 0.45); }
-
 .chip {
   padding: 8px 12px;
   border-radius: 999px;
