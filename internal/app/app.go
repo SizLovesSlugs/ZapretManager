@@ -785,7 +785,7 @@ func (a *App) Start() (State, error) {
 		}
 		a.runStartPreflight()
 		if err := a.enableZapret(dir, name); err != nil {
-			a.fail(err.Error())
+			a.fail("Не удалось запустить службу: " + err.Error())
 			return
 		}
 		if err := a.syncHostsToServiceState(); err != nil {
@@ -931,7 +931,9 @@ func (a *App) restoreService(prev zapret.ServiceState) {
 	if name == "" {
 		return
 	}
-	_ = a.enableZapret(dir, name)
+	if err := a.enableZapret(dir, name); err != nil {
+		a.recordError("восстановление службы: " + err.Error())
+	}
 }
 
 func (a *App) downloadAndInstall(ctx context.Context, version, dir string) error {

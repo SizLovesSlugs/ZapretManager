@@ -2,6 +2,8 @@ package zapret
 
 import (
 	"fmt"
+	"os"
+	"path/filepath"
 	"strings"
 	"sync"
 	"syscall"
@@ -93,16 +95,19 @@ func queryService() ServiceState {
 
 func EnableService(root, strategyName string, games []GameStrategy) error {
 	if !IsInstalled(root) {
-		return fmt.Errorf("zapret is not installed in %s", root)
+		return fmt.Errorf("установка: zapret не найден в %s", root)
 	}
 	if err := EnsureUserLists(root); err != nil {
-		return err
+		return fmt.Errorf("списки: %w", err)
 	}
-	_ = EnsureTCPTimestamps()
+	if err := EnsureTCPTimestamps(); err != nil {
+		// best-effort: preflight already logs this
+		_ = err
+	}
 
 	strats, err := ListStrategies(root)
 	if err != nil {
-		return err
+		return fmt.Errorf("список стратегий: %w", err)
 	}
 	var chosen *Strategy
 	for i := range strats {
@@ -112,23 +117,29 @@ func EnableService(root, strategyName string, games []GameStrategy) error {
 		}
 	}
 	if chosen == nil {
-		return fmt.Errorf("strategy not found: %s", strategyName)
+		return fmt.Errorf("стратегия не найдена: %s", strategyName)
 	}
 	gf := LoadGameFilter(root)
 	args, err := ParseWinwsArgs(chosen.Path, root, gf)
 	if err != nil {
-		return err
+		return fmt.Errorf("разбор %s: %w", chosen.FileName, err)
 	}
 	if len(games) > 0 {
+		if err := checkGameBins(root, games); err != nil {
+			return err
+		}
 		args = InjectGameStrategies(args, root, games)
 	}
 
 	exe := WinwsPath(root)
+	if _, err := os.Stat(exe); err != nil {
+		return fmt.Errorf("winws: %w", err)
+	}
 	cmdline := serviceCmdLine(exe, args)
 
 	m, err := mgr.Connect()
 	if err != nil {
-		return err
+		return fmt.Errorf("диспетчер служб: %w", err)
 	}
 	defer m.Disconnect()
 
@@ -148,6 +159,9 @@ func EnableService(root, strategyName string, games []GameStrategy) error {
 	same := sameCmdLine(readCmdLineFingerprint(), cmdline)
 
 	if running && same {
+		if err := confirmServiceStayedUp(s); err != nil {
+			return fmt.Errorf("%w; %s", err, summarizeWinwsArgs(args))
+		}
 		_ = writeStrategyName(chosen.Name)
 		InvalidateServiceCache()
 		return nil
@@ -167,12 +181,19 @@ func EnableService(root, strategyName string, games []GameStrategy) error {
 		stopServiceHandle(s)
 	}
 	if err := writeStrategyName(chosen.Name); err != nil {
-		return err
+		return fmt.Errorf("запись стратегии: %w", err)
 	}
 	_ = writeCmdLineFingerprint(cmdline)
-	err = s.Start()
+	if err := s.Start(); err != nil {
+		InvalidateServiceCache()
+		return fmt.Errorf("запуск службы: %w", err)
+	}
+	if err := confirmServiceStayedUp(s); err != nil {
+		InvalidateServiceCache()
+		return fmt.Errorf("%w; %s", err, summarizeWinwsArgs(args))
+	}
 	InvalidateServiceCache()
-	return err
+	return nil
 }
 
 func createAndStart(m *mgr.Mgr, exe string, args []string, strategyName string) error {
@@ -182,16 +203,94 @@ func createAndStart(m *mgr.Mgr, exe string, args []string, strategyName string) 
 		StartType:   mgr.StartAutomatic,
 	}, args...)
 	if err != nil {
-		return fmt.Errorf("create service: %w", err)
+		return fmt.Errorf("создание службы: %w", err)
 	}
 	defer s.Close()
 	if err := writeStrategyName(strategyName); err != nil {
-		return err
+		return fmt.Errorf("запись стратегии: %w", err)
 	}
 	_ = writeCmdLineFingerprint(serviceCmdLine(exe, args))
-	err = s.Start()
+	if err := s.Start(); err != nil {
+		InvalidateServiceCache()
+		return fmt.Errorf("запуск службы: %w", err)
+	}
+	if err := confirmServiceStayedUp(s); err != nil {
+		InvalidateServiceCache()
+		return fmt.Errorf("%w; %s", err, summarizeWinwsArgs(args))
+	}
 	InvalidateServiceCache()
-	return err
+	return nil
+}
+
+func checkGameBins(root string, games []GameStrategy) error {
+	seen := map[string]bool{}
+	for _, g := range mergeGameGroups(games) {
+		if seen[g.FakeUDP] {
+			continue
+		}
+		seen[g.FakeUDP] = true
+		path := filepath.Join(BinDir(root), g.FakeUDP)
+		if _, err := os.Stat(path); err != nil {
+			return fmt.Errorf("игровая стратегия %s: нет файла %s", g.Name, g.FakeUDP)
+		}
+	}
+	return nil
+}
+
+func summarizeWinwsArgs(args []string) string {
+	var wfUDP, filters []string
+	news := 0
+	for _, a := range args {
+		switch {
+		case strings.HasPrefix(a, "--wf-udp="):
+			wfUDP = append(wfUDP, strings.TrimPrefix(a, "--wf-udp="))
+		case strings.HasPrefix(a, "--filter-udp="):
+			filters = append(filters, strings.TrimPrefix(a, "--filter-udp="))
+		case a == "--new":
+			news++
+		}
+	}
+	return fmt.Sprintf("wf-udp=%s filter-udp=%s --new=%d", strings.Join(wfUDP, "|"), strings.Join(filters, "|"), news)
+}
+
+func confirmServiceStayedUp(s *mgr.Service) error {
+	deadline := time.Now().Add(3 * time.Second)
+	for time.Now().Before(deadline) {
+		st, err := s.Query()
+		if err != nil {
+			return fmt.Errorf("проверка службы: %w", err)
+		}
+		switch st.State {
+		case svc.Running:
+			time.Sleep(700 * time.Millisecond)
+			st, err = s.Query()
+			if err != nil {
+				return fmt.Errorf("проверка службы: %w", err)
+			}
+			if st.State != svc.Running {
+				return fmt.Errorf("winws завершился сразу после запуска (статус %s). Часто это слишком широкий UDP-фильтр WinDivert или битая командная строка", stateName(st.State))
+			}
+			if !processRunning("winws.exe") {
+				return fmt.Errorf("служба числится running, но процесс winws.exe уже нет")
+			}
+			return nil
+		case svc.StartPending:
+			time.Sleep(100 * time.Millisecond)
+		default:
+			time.Sleep(100 * time.Millisecond)
+			if time.Now().After(deadline.Add(-500 * time.Millisecond)) {
+				return fmt.Errorf("winws не запустился (статус %s)", stateName(st.State))
+			}
+		}
+	}
+	st, err := s.Query()
+	if err != nil {
+		return fmt.Errorf("winws не запустился за 3с: %w", err)
+	}
+	if st.State != svc.Running {
+		return fmt.Errorf("winws не запустился за 3с (статус %s)", stateName(st.State))
+	}
+	return nil
 }
 
 func StopService() error {

@@ -41,6 +41,14 @@ func newFileLogger() *fileLogger {
 }
 
 func (l *fileLogger) Error(msg string) {
+	l.write("ERROR", msg)
+}
+
+func (l *fileLogger) Warn(msg string) {
+	l.write("WARN", msg)
+}
+
+func (l *fileLogger) write(level, msg string) {
 	if l == nil {
 		return
 	}
@@ -48,7 +56,7 @@ func (l *fileLogger) Error(msg string) {
 	if msg == "" {
 		return
 	}
-	line := formatLogLine(time.Now(), msg)
+	line := formatLogLine(time.Now(), level, msg)
 	l.mu.Lock()
 	defer l.mu.Unlock()
 	_ = os.MkdirAll(zapret.LogsDir(), 0o755)
@@ -102,8 +110,11 @@ func (l *fileLogger) View() LogsView {
 	return view
 }
 
-func formatLogLine(t time.Time, msg string) string {
-	return t.Format(logTimeLayout) + " ERROR " + msg + "\n"
+func formatLogLine(t time.Time, level, msg string) string {
+	if level == "" {
+		level = "ERROR"
+	}
+	return t.Format(logTimeLayout) + " " + level + " " + msg + "\n"
 }
 
 func parseLogLine(line string) (LogEntry, bool) {
@@ -111,20 +122,22 @@ func parseLogLine(line string) (LogEntry, bool) {
 	if line == "" {
 		return LogEntry{}, false
 	}
-	const prefix = " ERROR "
-	idx := strings.Index(line, prefix)
-	if idx < 0 {
-		return LogEntry{}, false
+	for _, prefix := range []string{" ERROR ", " WARN ", " INFO "} {
+		idx := strings.Index(line, prefix)
+		if idx < 0 {
+			continue
+		}
+		stamp := strings.TrimSpace(line[:idx])
+		if _, err := time.Parse(logTimeLayout, stamp); err != nil {
+			return LogEntry{}, false
+		}
+		msg := strings.TrimSpace(line[idx+len(prefix):])
+		if msg == "" {
+			return LogEntry{}, false
+		}
+		return LogEntry{Time: stamp, Message: msg}, true
 	}
-	stamp := strings.TrimSpace(line[:idx])
-	if _, err := time.Parse(logTimeLayout, stamp); err != nil {
-		return LogEntry{}, false
-	}
-	msg := strings.TrimSpace(line[idx+len(prefix):])
-	if msg == "" {
-		return LogEntry{}, false
-	}
-	return LogEntry{Time: stamp, Message: msg}, true
+	return LogEntry{}, false
 }
 
 func parseLogEntries(data []byte, limit int) []LogEntry {

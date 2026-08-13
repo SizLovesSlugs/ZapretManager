@@ -73,30 +73,59 @@ func ResolveEnabled(enabled map[string]bool) []GameStrategy {
 }
 
 func InjectGameStrategies(args []string, root string, games []GameStrategy) []string {
-	for _, g := range games {
-		args = InjectGameStrategy(args, root, g)
+	groups := mergeGameGroups(games)
+	if len(groups) == 0 {
+		return args
 	}
-	return args
+	out := mergeWfUDP(args, joinGameUDP(groups))
+	for _, g := range groups {
+		out = appendGameDesync(out, root, g)
+	}
+	return out
 }
 
 // InjectGameStrategy merges UDP ports into --wf-udp and appends a Windows-adapted
 // game --new block. OpenWRT hopbyhop6 is dropped (unsupported in winws).
 func InjectGameStrategy(args []string, root string, g GameStrategy) []string {
-	if g.UDPPorts == "" {
-		return args
+	return InjectGameStrategies(args, root, []GameStrategy{g})
+}
+
+func mergeGameGroups(games []GameStrategy) []GameStrategy {
+	type acc struct {
+		g     GameStrategy
+		ports []string
 	}
-	out := append([]string(nil), args...)
-	for i, a := range out {
-		if strings.HasPrefix(a, "--wf-udp=") {
-			out[i] = mergeFlagCSV(a, g.UDPPorts)
+	order := make([]string, 0, len(games))
+	byFake := map[string]*acc{}
+	for _, g := range games {
+		ports := compactPortCSV(g.UDPPorts)
+		if ports == "" {
+			continue
 		}
+		fake := g.FakeUDP
+		if fake == "" {
+			fake = "quic_initial_www_google_com.bin"
+		}
+		if cur, ok := byFake[fake]; ok {
+			cur.ports = append(cur.ports, ports)
+			continue
+		}
+		g.FakeUDP = fake
+		byFake[fake] = &acc{g: g, ports: []string{ports}}
+		order = append(order, fake)
 	}
-	fake := g.FakeUDP
-	if fake == "" {
-		fake = "quic_initial_www_google_com.bin"
+	out := make([]GameStrategy, 0, len(order))
+	for _, fake := range order {
+		cur := byFake[fake]
+		cur.g.UDPPorts = compactPortCSV(strings.Join(cur.ports, ","))
+		out = append(out, cur.g)
 	}
-	fakePath := filepath.Join(BinDir(root), fake)
-	out = append(out,
+	return out
+}
+
+func appendGameDesync(args []string, root string, g GameStrategy) []string {
+	fakePath := filepath.Join(BinDir(root), g.FakeUDP)
+	return append(args,
 		"--new",
 		"--filter-udp="+g.UDPPorts,
 		"--dpi-desync=fake",
@@ -106,33 +135,4 @@ func InjectGameStrategy(args []string, root string, g GameStrategy) []string {
 		"--dpi-desync-fake-unknown-udp="+fakePath,
 		"--dpi-desync-cutoff=n2",
 	)
-	return out
-}
-
-func mergeFlagCSV(flagWithValue, extraCSV string) string {
-	eq := strings.IndexByte(flagWithValue, '=')
-	if eq < 0 {
-		return flagWithValue
-	}
-	prefix := flagWithValue[:eq+1]
-	cur := flagWithValue[eq+1:]
-	seen := map[string]bool{}
-	var parts []string
-	for _, p := range strings.Split(cur, ",") {
-		p = strings.TrimSpace(p)
-		if p == "" || seen[p] {
-			continue
-		}
-		seen[p] = true
-		parts = append(parts, p)
-	}
-	for _, p := range strings.Split(extraCSV, ",") {
-		p = strings.TrimSpace(p)
-		if p == "" || seen[p] {
-			continue
-		}
-		seen[p] = true
-		parts = append(parts, p)
-	}
-	return prefix + strings.Join(parts, ",")
 }

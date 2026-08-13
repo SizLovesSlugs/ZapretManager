@@ -9,7 +9,7 @@ import (
 )
 
 func TestParseLogLine(t *testing.T) {
-	line := formatLogLine(time.Date(2026, 8, 12, 20, 23, 15, 0, time.Local), `Не удалось получить релизы: Get "https://github.com/Flowseal/zapret-discord-youtube/releases": EOF`)
+	line := formatLogLine(time.Date(2026, 8, 12, 20, 23, 15, 0, time.Local), "ERROR", `Не удалось получить релизы: Get "https://github.com/Flowseal/zapret-discord-youtube/releases": EOF`)
 	entry, ok := parseLogLine(line)
 	if !ok {
 		t.Fatal("expected parsed entry")

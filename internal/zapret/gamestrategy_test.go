@@ -20,7 +20,7 @@ func TestInjectGameStrategy(t *testing.T) {
 		t.Fatalf("wf-udp not merged: %s", out[1])
 	}
 	joined := strings.Join(out, " ")
-	if !strings.Contains(joined, "--filter-udp="+g.UDPPorts) {
+	if !strings.Contains(joined, "--filter-udp="+compactPortCSV(g.UDPPorts)) {
 		t.Fatalf("missing filter-udp: %s", joined)
 	}
 	if strings.Contains(joined, "hopbyhop6") {
@@ -44,17 +44,29 @@ func TestInjectGameStrategiesMultiple(t *testing.T) {
 	}
 	out := InjectGameStrategies(args, root, games)
 	joined := strings.Join(out, " ")
-	if strings.Count(joined, "--new") < 2 {
-		t.Fatalf("expected a --new block per strategy: %s", joined)
+	if strings.Count(joined, "--new") != 1 {
+		t.Fatalf("same desync should merge into one --new: %s", joined)
 	}
-	if !strings.Contains(out[0], "7771-8000") || !strings.Contains(out[0], "7000-9000") {
-		t.Fatalf("wf-udp missing both port sets: %s", out[0])
+	wf := strings.TrimPrefix(out[0], "--wf-udp=")
+	for _, port := range []int{443, 7777, 8500, 12500, 27050, 61456} {
+		if !portCSVCovers(wf, port) {
+			t.Fatalf("wf-udp %s does not cover %d", wf, port)
+		}
 	}
-	if !strings.Contains(joined, "--filter-udp="+games[0].UDPPorts) {
-		t.Fatalf("missing dbd filter: %s", joined)
+	var filter string
+	for _, a := range out {
+		if strings.HasPrefix(a, "--filter-udp=") {
+			filter = strings.TrimPrefix(a, "--filter-udp=")
+			break
+		}
 	}
-	if !strings.Contains(joined, "--filter-udp="+games[1].UDPPorts) {
-		t.Fatalf("missing rocket league filter: %s", joined)
+	for _, port := range []int{3400, 7777, 8500, 12500, 27000, 61457} {
+		if !portCSVCovers(filter, port) {
+			t.Fatalf("filter-udp %s does not cover %d", filter, port)
+		}
+	}
+	if strings.Contains(filter, "7700-8100") {
+		t.Fatalf("overlapping 7700-8100 should be absorbed: %s", filter)
 	}
 }
 
@@ -69,9 +81,31 @@ func TestResolveEnabledDefaults(t *testing.T) {
 	}
 }
 
-func TestMergeFlagCSVIdempotent(t *testing.T) {
-	got := mergeFlagCSV("--wf-udp=443,7771-8000", "7771-8000,61456")
-	if got != "--wf-udp=443,7771-8000,61456" {
+func TestCompactPortCSV(t *testing.T) {
+	got := compactPortCSV("7700-8100,7000-9000,3400-3500,7771-8000,61456,61457")
+	want := "3400-3500,7000-9000,61456-61457"
+	if got != want {
+		t.Fatalf("got %s want %s", got, want)
+	}
+}
+
+func TestMergeUDPPortCSVFitsBudget(t *testing.T) {
+	existing := "443,19294-19344,50000-50100"
+	extra := "7700-8100,7000-9000,3400-3500,4300-4400,27000-27100,12000-13000,7771-8000,61456,61457"
+	got := mergeUDPPortCSV(existing, extra, maxUDPFilterFragment)
+	if estimateUDPFilterFragment(parsePortCSV(got)) > maxUDPFilterFragment {
+		t.Fatalf("filter too long: %s (%d)", got, estimateUDPFilterFragment(parsePortCSV(got)))
+	}
+	for _, port := range []int{443, 3400, 8000, 12500, 19300, 27050, 50050, 61456} {
+		if !portCSVCovers(got, port) {
+			t.Fatalf("%s does not cover %d", got, port)
+		}
+	}
+}
+
+func TestMergeUDPAlreadyCovered(t *testing.T) {
+	got := mergeUDPPortCSV("443,1024-65535", "7000-9000,61456", maxUDPFilterFragment)
+	if got != "443,1024-65535" {
 		t.Fatalf("got %s", got)
 	}
 }
