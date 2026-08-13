@@ -77,7 +77,7 @@ go build -trimpath -ldflags "-H windowsgui -s -w" -o ZapretManager-1.0.exe ./cmd
 ## 🩷 Благодарности
 
 Большое спасибо [bol-van](https://github.com/bol-van), [Flowseal](https://github.com/flowseal) и [StressOzz](https://github.com/StressOzz) за Zapret, стратегии и огромный вклад в сообщество!  
-Спасибо Cursor и Grok 4.6 за возможность в свободное время быстро реализовывать классные некомерческие проекты.
+Спасибо Cursor и Grok 4.6 за возможность в свободное время быстро реализовывать классные некоммерческие проекты.
 
 Проект не связан с авторами zapret официально: это отдельный менеджер поверх их сборок.
 
