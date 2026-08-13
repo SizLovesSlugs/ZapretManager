@@ -22,7 +22,8 @@ const channelLatest = "latest"
 
 type Config struct {
 	LastStrategy     string          `json:"lastStrategy"`
-	LastGameStrategy string          `json:"lastGameStrategy"`
+	LastGameStrategy string          `json:"lastGameStrategy,omitempty"`
+	GameStrategies   map[string]bool `json:"gameStrategies"`
 	Channel          string          `json:"channel"`
 	TelegramWebBoost *bool           `json:"telegramWebBoost"`
 	GameBoost        *bool           `json:"gameBoost"`
@@ -64,7 +65,7 @@ type State struct {
 	Strategies       []zapret.Strategy      `json:"strategies"`
 	GameStrategies   []zapret.GameStrategy  `json:"gameStrategies"`
 	Selected         string                 `json:"selected"`
-	SelectedGame     string                 `json:"selectedGame"`
+	SelectedGames    []string               `json:"selectedGames"`
 	GameFilter       zapret.GameFilter      `json:"gameFilter"`
 	TelegramWebBoost bool                   `json:"telegramWebBoost"`
 	GameBoost        bool                   `json:"gameBoost"`
@@ -146,9 +147,7 @@ func overlayLive(st State, a *App) State {
 	if a.cfg.LastStrategy != "" {
 		st.Selected = a.cfg.LastStrategy
 	}
-	if a.cfg.LastGameStrategy != "" {
-		st.SelectedGame = zapret.ResolveGameStrategy(a.cfg.LastGameStrategy).ID
-	}
+	st.SelectedGames = a.cfg.enabledGameIDs()
 	st.AppUpdateReady = a.appUpdateReady
 	return st
 }
@@ -457,25 +456,42 @@ func (a *App) SelectStrategy(name string) (State, error) {
 }
 
 func (a *App) SelectGameStrategy(id string) (State, error) {
-	gs := zapret.ResolveGameStrategy(id)
+	gs, ok := zapret.GameStrategyByID(id)
+	if !ok {
+		return a.GetState(), fmt.Errorf("unknown game strategy: %s", id)
+	}
 	a.mu.Lock()
-	a.cfg.LastGameStrategy = gs.ID
+	if a.cfg.GameStrategies == nil {
+		a.cfg.GameStrategies = map[string]bool{}
+	}
+	cur, ok := a.cfg.GameStrategies[gs.ID]
+	if !ok {
+		cur = gs.DefaultOn
+	}
+	next := !cur
+	a.cfg.GameStrategies[gs.ID] = next
+	a.cfg.LastGameStrategy = ""
 	_ = saveConfig(a.cfg)
 	a.invalidateStateCache()
 	boost := a.cfg.IsGameBoost()
 	mainName := a.cfg.LastStrategy
 	a.mu.Unlock()
 
+	msg := "Выключено: " + gs.Name
+	if next {
+		msg = "Включено: " + gs.Name
+	}
+
 	prev := zapret.QueryService()
 	if !boost || !serviceActive(prev) {
 		a.mu.Lock()
 		a.err = ""
-		a.message = "Игровая стратегия: " + gs.Name
+		a.message = msg
 		st := a.snapshot()
 		a.mu.Unlock()
 		return st, nil
 	}
-	return a.goWork("Смена игровой стратегии…", func(context.Context) {
+	return a.goWork("Смена игровых стратегий…", func(context.Context) {
 		dir := zapret.DefaultInstallDir()
 		if mainName == "" {
 			mainName = a.strategyForRestart(dir, prev.Strategy)
@@ -486,7 +502,7 @@ func (a *App) SelectGameStrategy(id string) (State, error) {
 		}
 		a.mu.Lock()
 		a.err = ""
-		a.message = "Игровая стратегия: " + gs.Name
+		a.message = msg
 		a.mu.Unlock()
 	}), nil
 }
@@ -536,13 +552,12 @@ func (a *App) enableZapret(dir, strategyName string) error {
 	if strategyName == "" {
 		strategyName = a.cfg.LastStrategy
 	}
-	var game *zapret.GameStrategy
+	var games []zapret.GameStrategy
 	if a.cfg.IsGameBoost() {
-		gs := zapret.ResolveGameStrategy(a.cfg.LastGameStrategy)
-		game = &gs
+		games = zapret.ResolveEnabled(a.cfg.GameStrategies)
 	}
 	a.mu.Unlock()
-	return zapret.EnableService(dir, strategyName, game)
+	return zapret.EnableService(dir, strategyName, games)
 }
 
 // runStartPreflight clears foreign Flowseal/other zapret + WinDivert and
@@ -1027,7 +1042,7 @@ func (a *App) snapshotFrom(svc zapret.ServiceState, strats []zapret.Strategy) St
 		DNSProfile:       dns.NormalizeID(a.cfg.DNSProfile),
 		DNSProfiles:      dns.Profiles(),
 		Selected:         a.cfg.LastStrategy,
-		SelectedGame:     zapret.ResolveGameStrategy(a.cfg.LastGameStrategy).ID,
+		SelectedGames:    a.cfg.enabledGameIDs(),
 	}
 	if FollowLatest(channel) {
 		st.VersionLabel = "Актуальная"
@@ -1183,7 +1198,8 @@ func normalizeConfig(cfg Config) Config {
 	if cfg.GameBoost == nil {
 		cfg.GameBoost = boolPtr(true)
 	}
-	cfg.LastGameStrategy = zapret.ResolveGameStrategy(cfg.LastGameStrategy).ID
+	cfg.GameStrategies = normalizeGameStrategies(cfg.GameStrategies)
+	cfg.LastGameStrategy = ""
 	cfg.DNSProfile = dns.NormalizeID(cfg.DNSProfile)
 	if cfg.ServiceBoosts == nil {
 		cfg.ServiceBoosts = map[string]bool{}
@@ -1209,6 +1225,27 @@ func (c Config) IsGameBoost() bool {
 		return true
 	}
 	return *c.GameBoost
+}
+
+func (c Config) enabledGameIDs() []string {
+	games := zapret.ResolveEnabled(c.GameStrategies)
+	ids := make([]string, 0, len(games))
+	for _, g := range games {
+		ids = append(ids, g.ID)
+	}
+	return ids
+}
+
+func normalizeGameStrategies(cur map[string]bool) map[string]bool {
+	out := map[string]bool{}
+	for _, g := range zapret.GameStrategies() {
+		if on, ok := cur[g.ID]; ok {
+			out[g.ID] = on
+			continue
+		}
+		out[g.ID] = g.DefaultOn
+	}
+	return out
 }
 
 func (c Config) IsServiceBoost(id string) bool {

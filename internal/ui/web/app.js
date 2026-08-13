@@ -357,11 +357,12 @@ async function select(name) {
 function renderGameStrategies(busy) {
   const box = $("gameStrategies");
   const items = state.gameStrategies || [];
-  const selected = state.selectedGame || "";
-  const listKey = items.map((s) => s.id + ":" + s.name).join("|") + "|" + selected + "|" + (busy ? "1" : "0");
+  const selected = new Set(state.selectedGames || []);
+  const selKey = [...selected].sort().join(",");
+  const listKey = items.map((s) => s.id + ":" + s.name).join("|") + "|" + selKey + "|" + (busy ? "1" : "0");
   if (listKey === lastGameStratListKey) {
     box.querySelectorAll(".chip[data-id]").forEach((el) => {
-      toggle(el, "selected", el.dataset.id === selected);
+      toggle(el, "selected", selected.has(el.dataset.id));
       el.disabled = busy;
     });
     return;
@@ -373,7 +374,7 @@ function renderGameStrategies(busy) {
   }
   box.innerHTML = items
     .map((s, i) => {
-      const cls = s.id === selected ? "chip selected" : "chip";
+      const cls = selected.has(s.id) ? "chip selected" : "chip";
       return `<button type="button" class="${cls}" data-id="${escapeAttr(s.id)}" style="animation-delay:${Math.min(i, 12) * 18}ms"${busy ? " disabled" : ""}>${escapeHtml(s.name)}</button>`;
     })
     .join("");
@@ -385,8 +386,11 @@ function renderGameStrategies(busy) {
 let selectGameSeq = 0;
 
 async function selectGame(id) {
-  if (!state || state.selectedGame === id) return;
-  state.selectedGame = id;
+  if (!state) return;
+  const selected = new Set(state.selectedGames || []);
+  if (selected.has(id)) selected.delete(id);
+  else selected.add(id);
+  state.selectedGames = [...selected];
   renderGameStrategies(Boolean(state.busy));
   const seq = ++selectGameSeq;
   try {

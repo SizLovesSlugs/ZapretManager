@@ -7,18 +7,27 @@ import (
 
 // GameStrategy is injected into the main winws arg list as an extra --new block.
 type GameStrategy struct {
-	ID       string `json:"id"`
-	Name     string `json:"name"`
-	UDPPorts string `json:"udpPorts"`
-	FakeUDP  string `json:"-"` // filename under bin/
+	ID        string `json:"id"`
+	Name      string `json:"name"`
+	UDPPorts  string `json:"udpPorts"`
+	DefaultOn bool   `json:"defaultOn"`
+	FakeUDP   string `json:"-"` // filename under bin/
 }
 
 var builtinGameStrategies = []GameStrategy{
 	{
-		ID:       "siz-loves-dbd-1",
-		Name:     "Siz Loves DbD v1",
-		UDPPorts: "7771-8000,61456,61457",
-		FakeUDP:  "quic_initial_www_google_com.bin",
+		ID:        "siz-loves-dbd-1",
+		Name:      "Siz Loves DbD v1",
+		UDPPorts:  "7771-8000,61456,61457",
+		DefaultOn: true,
+		FakeUDP:   "quic_initial_www_google_com.bin",
+	},
+	{
+		ID:        "siz-loves-rocket-league-1",
+		Name:      "Siz Loves Rocket League v1",
+		UDPPorts:  "7700-8100,7000-9000,3400-3500,4300-4400,27000-27100,12000-13000",
+		DefaultOn: true,
+		FakeUDP:   "quic_initial_www_google_com.bin",
 	},
 }
 
@@ -45,6 +54,29 @@ func ResolveGameStrategy(id string) GameStrategy {
 		return g
 	}
 	return DefaultGameStrategy()
+}
+
+// ResolveEnabled returns builtin strategies that are on in enabled.
+// Missing keys fall back to DefaultOn.
+func ResolveEnabled(enabled map[string]bool) []GameStrategy {
+	var out []GameStrategy
+	for _, g := range builtinGameStrategies {
+		on, ok := enabled[g.ID]
+		if !ok {
+			on = g.DefaultOn
+		}
+		if on {
+			out = append(out, g)
+		}
+	}
+	return out
+}
+
+func InjectGameStrategies(args []string, root string, games []GameStrategy) []string {
+	for _, g := range games {
+		args = InjectGameStrategy(args, root, g)
+	}
+	return args
 }
 
 // InjectGameStrategy merges UDP ports into --wf-udp and appends a Windows-adapted

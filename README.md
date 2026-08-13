@@ -1,3 +1,11 @@
+> [!IMPORTANT]
+> Формально EULA Dead By Daylight запрещает использование неодобренных инструментов для работы с сетевым трафиком (для борьбы с DDoS и ПО для снайпинга), однако данный инструмент не взаимодействует с серверами игры и не даёт игрового преимущества. В моей стратегии фейковые UDP пакеты имеют низкий TTL и не долетают до серверов игры. Сервера игры получают только чистый немодицифированный трафик.
+> Сам использую стратегии для DBD около года и считаю их безопасными, но считаю нужным озвучить эту информацию.
+> Прецедентов в банами в DBD за использование Zapret не обнаружил в интернете.
+
+> [!IMPORTANT]
+> UPD. Направил в BHVR развёрнутый вопрос и просьбу дать развёрный ответ, нарушает ли использование Zapret их EULA. Если результат будет положительный, смогу рекомендовать этот инструмент. Пока что рекомендовать не могу. Думайте своей головой.
+
 <div align="center">
 
 # Zapret Manager by Siz (beta)
@@ -7,18 +15,19 @@
 ![Status](https://img.shields.io/badge/Status-Active-brightgreen)
 [![GitHub last commit](https://img.shields.io/github/last-commit/SizLovesSlugs/ZapretManager)](https://github.com/SizLovesSlugs/ZapretManager/commits/main)
 
-Ускорь Dead by Daylight, YouTube, Discord, Telegram, Instagram, нейросети и прочее за пару кликов!  
+Ускорь Dead by Daylight, YouTube, Discord, Telegram, Instagram, нейросети, Rocket League и прочее за пару кликов!  
 Без лишних туннелей и бесплатно.
 
 **Как юзать? [Скачай](https://github.com/SizLovesSlugs/ZapretManager/releases/latest), запусти, включи.**
 
 </div>
 
+<img width="1109" height="769" alt="image" src="https://github.com/user-attachments/assets/5ffd84ea-5366-4a0b-8bd2-2359dd3f1b33" />
 
 У разных провайдеров разные стратегии, поэтому протестируйте несколько и остановитесь на той, с которой стабильно работают нужные сервисы.  
 Проект на стадии тестирования.
 
-**Вопросы или проблемы? Пиши в [Telegram](https://t.me/SizLovesSlugs)**
+**Вопросы, проблемы, идеи? Пиши в [Telegram](https://t.me/SizLovesSlugs)**
 
 ---
 
@@ -70,13 +79,13 @@
 Если Go уже установлен, можно так:
 
 ```bat
-go build -trimpath -ldflags "-H windowsgui -s -w" -o ZapretManager-1.0.exe ./cmd/zapret-manager
+go build -trimpath -ldflags "-H windowsgui -s -w" -o ZapretManager-1.1.exe ./cmd/zapret-manager
 ```
 
 ## 🩷 Благодарности
 
 Большое спасибо [bol-van](https://github.com/bol-van), [Flowseal](https://github.com/flowseal) и [StressOzz](https://github.com/StressOzz) за Zapret, стратегии и огромный вклад в сообщество!  
-Спасибо Cursor и Grok 4.6 за возможность в свободное время быстро реализовывать классные некомерческие проекты.
+Спасибо Cursor и Grok 4.6 за возможность в свободное время быстро реализовывать классные некоммерческие проекты.
 
 Проект не связан с авторами zapret официально: это отдельный менеджер поверх их сборок.
 

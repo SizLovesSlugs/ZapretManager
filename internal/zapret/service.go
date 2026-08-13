@@ -91,7 +91,7 @@ func queryService() ServiceState {
 	return st
 }
 
-func EnableService(root, strategyName string, game *GameStrategy) error {
+func EnableService(root, strategyName string, games []GameStrategy) error {
 	if !IsInstalled(root) {
 		return fmt.Errorf("zapret is not installed in %s", root)
 	}
@@ -119,8 +119,8 @@ func EnableService(root, strategyName string, game *GameStrategy) error {
 	if err != nil {
 		return err
 	}
-	if game != nil {
-		args = InjectGameStrategy(args, root, *game)
+	if len(games) > 0 {
+		args = InjectGameStrategies(args, root, games)
 	}
 
 	exe := WinwsPath(root)
