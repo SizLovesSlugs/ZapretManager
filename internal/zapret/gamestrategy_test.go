@@ -48,7 +48,10 @@ func TestInjectGameStrategiesMultiple(t *testing.T) {
 		t.Fatalf("same desync should merge into one --new: %s", joined)
 	}
 	wf := strings.TrimPrefix(out[0], "--wf-udp=")
-	for _, port := range []int{443, 7777, 8500, 12500, 27050, 61456} {
+	if strings.Contains(wf, "3400-61457") || strings.Contains(wf, "1024-65535") {
+		t.Fatalf("wf-udp must not span game-port gaps: %s", wf)
+	}
+	for _, port := range []int{443, 7777, 8500, 61456} {
 		if !portCSVCovers(wf, port) {
 			t.Fatalf("wf-udp %s does not cover %d", wf, port)
 		}
@@ -90,13 +93,19 @@ func TestCompactPortCSV(t *testing.T) {
 }
 
 func TestMergeUDPPortCSVFitsBudget(t *testing.T) {
-	existing := "443,19294-19344,50000-50100"
+	existing := "12,443,19294-19344,50000-50100"
 	extra := "7700-8100,7000-9000,3400-3500,4300-4400,27000-27100,12000-13000,7771-8000,61456,61457"
 	got := mergeUDPPortCSV(existing, extra, maxUDPFilterFragment)
 	if estimateUDPFilterFragment(parsePortCSV(got)) > maxUDPFilterFragment {
 		t.Fatalf("filter too long: %s (%d)", got, estimateUDPFilterFragment(parsePortCSV(got)))
 	}
-	for _, port := range []int{443, 3400, 8000, 12500, 19300, 27050, 50050, 61456} {
+	if strings.Contains(got, "3400-61457") || strings.Contains(got, "1024-65535") {
+		t.Fatalf("must not span gaps: %s", got)
+	}
+	if portCSVCovers(got, 12) {
+		t.Fatalf("dummy GameFilter port 12 leaked into wf-udp: %s", got)
+	}
+	for _, port := range []int{443, 8000, 19300, 50050, 61456} {
 		if !portCSVCovers(got, port) {
 			t.Fatalf("%s does not cover %d", got, port)
 		}

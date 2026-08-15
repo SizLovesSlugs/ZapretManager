@@ -124,6 +124,28 @@ func minMaxRange(ranges []portRange) []portRange {
 	return []portRange{{from, to}}
 }
 
+// Flowseal uses UDP/TCP port 12 as a dummy when Game Filter is off.
+const dummyGameFilterPort = 12
+
+func stripDummyPorts(ranges []portRange) []portRange {
+	var out []portRange
+	for _, r := range ranges {
+		if r.from == dummyGameFilterPort && r.to == dummyGameFilterPort {
+			continue
+		}
+		out = append(out, r)
+	}
+	return out
+}
+
+func rangeWidth(r portRange) int {
+	return r.to - r.from + 1
+}
+
+func fitsUDPFragment(ranges []portRange, maxFragment int) bool {
+	return maxFragment <= 0 || estimateUDPFilterFragment(ranges) <= maxFragment
+}
+
 // estimateUDPFilterFragment is a conservative length of winws's
 // `udp.DstPort==N or (udp.DstPort>=A and udp.DstPort<=B)` fragment.
 func estimateUDPFilterFragment(ranges []portRange) int {
@@ -149,16 +171,53 @@ func mergeUDPPortCSV(existing, extra string, maxFragment int) string {
 	if extra == "" {
 		return compactPortCSV(existing)
 	}
-	have := parsePortCSV(existing)
-	add := uncoveredRanges(parsePortCSV(extra), have)
+	have := stripDummyPorts(parsePortCSV(existing))
+	add := uncoveredRanges(stripDummyPorts(parsePortCSV(extra)), have)
 	if len(add) == 0 {
+		if len(have) == 0 {
+			return compactPortCSV(existing)
+		}
 		return formatPortCSV(have)
 	}
 	combined := compactRanges(append(append([]portRange{}, have...), add...))
-	if maxFragment > 0 && estimateUDPFilterFragment(combined) > maxFragment {
-		combined = compactRanges(append(append([]portRange{}, have...), minMaxRange(add)...))
+	if fitsUDPFragment(combined, maxFragment) {
+		return formatPortCSV(combined)
 	}
-	return formatPortCSV(combined)
+	// Do not fill gaps (e.g. 3400-61457). That makes WinDivert capture
+	// almost all UDP and winws exits right after start.
+	picked := append([]portRange{}, have...)
+	if !fitsUDPFragment(picked, maxFragment) {
+		return formatPortCSV(picked)
+	}
+	sort.Slice(add, func(i, j int) bool {
+		wi, wj := rangeWidth(add[i]), rangeWidth(add[j])
+		if wi != wj {
+			return wi > wj
+		}
+		return add[i].from < add[j].from
+	})
+	rest := add
+	if len(add) > 0 {
+		trial := compactRanges(append(append([]portRange{}, picked...), add[0]))
+		if fitsUDPFragment(trial, maxFragment) {
+			picked = trial
+			rest = add[1:]
+		}
+	}
+	sort.Slice(rest, func(i, j int) bool {
+		wi, wj := rangeWidth(rest[i]), rangeWidth(rest[j])
+		if wi != wj {
+			return wi < wj
+		}
+		return rest[i].from < rest[j].from
+	})
+	for _, r := range rest {
+		trial := compactRanges(append(append([]portRange{}, picked...), r))
+		if fitsUDPFragment(trial, maxFragment) {
+			picked = trial
+		}
+	}
+	return formatPortCSV(picked)
 }
 
 func mergeWfUDP(args []string, extraCSV string) []string {
