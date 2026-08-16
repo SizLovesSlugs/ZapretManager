@@ -112,8 +112,14 @@ func TestInjectDbDv2SeparateFromV1(t *testing.T) {
 	if strings.Count(joined, "--new") != 2 {
 		t.Fatalf("v1 and v2 must stay separate: %s", joined)
 	}
-	if !strings.Contains(joined, "--dpi-desync=fake,udplen,ipfrag2") {
+	if !strings.Contains(joined, "--dpi-desync=fake,ipfrag2") {
 		t.Fatalf("missing v2 desync: %s", joined)
+	}
+	if strings.Contains(joined, "udplen") {
+		t.Fatal("udplen+ipfrag2 is an invalid winws combo")
+	}
+	if strings.Count(v2.Desync, ",") > 1 {
+		t.Fatalf("winws allows at most two desync modes, got %q", v2.Desync)
 	}
 	if !strings.Contains(joined, "--dpi-desync-ttl=1") {
 		t.Fatalf("missing ttl=1: %s", joined)
@@ -123,6 +129,17 @@ func TestInjectDbDv2SeparateFromV1(t *testing.T) {
 	}
 	if strings.Contains(joined, "hopbyhop") {
 		t.Fatal("hopbyhop must not be used on winws")
+	}
+}
+
+func TestResolveEnabledDbDV2ReplacesV1(t *testing.T) {
+	got := ResolveEnabled(map[string]bool{
+		"siz-loves-dbd-1":           true,
+		"siz-loves-dbd-2":           true,
+		"siz-loves-rocket-league-1": false,
+	})
+	if len(got) != 1 || got[0].ID != "siz-loves-dbd-2" {
+		t.Fatalf("v2 must replace v1: %+v", got)
 	}
 }
 

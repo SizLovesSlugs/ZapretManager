@@ -37,19 +37,19 @@ var builtinGameStrategies = []GameStrategy{
 		Cutoff:    "n2",
 	},
 	{
-		// OpenWRT original used hopbyhop6,fake. winws has no hopbyhop6;
-		// fake+udplen+ipfrag2 with TTL=1 is the Windows stand-in for TSPU
-		// that ignores a plain QUIC fake (Коломна and similar).
+		// winws accepts one phase-1 mode plus one phase-2 mode.
+		// fake+udplen+ipfrag2 is invalid and winws exits on start.
+		// fake,ipfrag2 mutates the original UDP datagram so a TSPU
+		// that ignores a plain QUIC fake still has to reassemble fragments.
 		ID:        "siz-loves-dbd-2",
 		Name:      "Siz Loves DbD v2",
 		UDPPorts:  "7771-8000,61456,61457",
 		DefaultOn: false,
 		FakeUDP:   defaultFakeUDP,
-		Desync:    "fake,udplen,ipfrag2",
+		Desync:    "fake,ipfrag2",
 		TTL:       "1",
 		Repeats:   10,
 		Cutoff:    "n4",
-		UDPLenInc: 2,
 		IPFragPos: 8,
 	},
 	{
@@ -102,6 +102,27 @@ func ResolveEnabled(enabled map[string]bool) []GameStrategy {
 		if on {
 			out = append(out, g)
 		}
+	}
+	return dropSupersededGames(out)
+}
+
+func dropSupersededGames(games []GameStrategy) []GameStrategy {
+	hasV2 := false
+	for _, g := range games {
+		if g.ID == "siz-loves-dbd-2" {
+			hasV2 = true
+			break
+		}
+	}
+	if !hasV2 {
+		return games
+	}
+	out := games[:0]
+	for _, g := range games {
+		if g.ID == "siz-loves-dbd-1" {
+			continue
+		}
+		out = append(out, g)
 	}
 	return out
 }
