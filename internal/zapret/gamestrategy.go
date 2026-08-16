@@ -37,18 +37,15 @@ var builtinGameStrategies = []GameStrategy{
 		Cutoff:    "n2",
 	},
 	{
-		// One phase-1 + one phase-2 only. ipfrag2 can leave WinDivert
-		// stuck STOP_PENDING; udplen mutates the original datagram.
 		ID:        "siz-loves-dbd-2",
 		Name:      "Siz Loves DbD v2",
 		UDPPorts:  "7771-8000,61456,61457",
 		DefaultOn: false,
-		FakeUDP:   defaultFakeUDP,
-		Desync:    "fake,udplen",
-		TTL:       "1",
-		Repeats:   11,
+		FakeUDP:   "quic_initial_dbankcloud_ru.bin",
+		Desync:    "fake",
+		AutoTTL:   "6",
+		Repeats:   12,
 		Cutoff:    "n4",
-		UDPLenInc: 2,
 	},
 	{
 		ID:        "siz-loves-rocket-league-1",

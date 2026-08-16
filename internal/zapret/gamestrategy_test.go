@@ -112,20 +112,20 @@ func TestInjectDbDv2SeparateFromV1(t *testing.T) {
 	if strings.Count(joined, "--new") != 2 {
 		t.Fatalf("v1 and v2 must stay separate: %s", joined)
 	}
-	if !strings.Contains(joined, "--dpi-desync=fake,udplen") {
-		t.Fatalf("missing v2 desync: %s", joined)
+	if !strings.Contains(joined, "quic_initial_dbankcloud_ru.bin") {
+		t.Fatalf("missing v2 fake: %s", joined)
 	}
-	if strings.Contains(joined, "ipfrag") {
-		t.Fatal("ipfrag2 must not be used: it can wedge WinDivert")
+	if !strings.Contains(joined, "--dpi-desync-autottl=6") {
+		t.Fatalf("missing autottl=6: %s", joined)
 	}
-	if strings.Count(v2.Desync, ",") > 1 {
-		t.Fatalf("winws allows at most two desync modes, got %q", v2.Desync)
+	if !strings.Contains(joined, "--dpi-desync-repeats=12") {
+		t.Fatalf("missing repeats=12: %s", joined)
 	}
-	if !strings.Contains(joined, "--dpi-desync-ttl=1") {
-		t.Fatalf("missing ttl=1: %s", joined)
+	if !strings.Contains(joined, "--dpi-desync-cutoff=n4") {
+		t.Fatalf("missing cutoff=n4: %s", joined)
 	}
-	if !strings.Contains(joined, "--dpi-desync-udplen-increment=2") {
-		t.Fatalf("missing udplen increment: %s", joined)
+	if strings.Contains(joined, "udplen") || strings.Contains(joined, "ipfrag") {
+		t.Fatal("v2 must stay fake-only like v1")
 	}
 	if strings.Contains(joined, "hopbyhop") {
 		t.Fatal("hopbyhop must not be used on winws")
