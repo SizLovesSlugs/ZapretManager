@@ -49,8 +49,8 @@ func TestInjectGameStrategiesMultiple(t *testing.T) {
 	}
 	out := InjectGameStrategies(args, root, games)
 	joined := strings.Join(out, " ")
-	if strings.Count(joined, "--new") != 1 {
-		t.Fatalf("same desync should merge into one --new: %s", joined)
+	if strings.Count(joined, "--new") != 2 {
+		t.Fatalf("DbD and RL profiles differ, expected two --new: %s", joined)
 	}
 	wf := strings.TrimPrefix(out[0], "--wf-udp=")
 	if strings.Contains(wf, "3400-61457") || strings.Contains(wf, "1024-65535") {
@@ -61,13 +61,13 @@ func TestInjectGameStrategiesMultiple(t *testing.T) {
 			t.Fatalf("wf-udp %s does not cover %d", wf, port)
 		}
 	}
-	var filter string
+	var filters []string
 	for _, a := range out {
 		if strings.HasPrefix(a, "--filter-udp=") {
-			filter = strings.TrimPrefix(a, "--filter-udp=")
-			break
+			filters = append(filters, strings.TrimPrefix(a, "--filter-udp="))
 		}
 	}
+	filter := strings.Join(filters, ",")
 	for _, port := range []int{3400, 7777, 8500, 12500, 27000, 61457} {
 		if !portCSVCovers(filter, port) {
 			t.Fatalf("filter-udp %s does not cover %d", filter, port)
@@ -95,51 +95,33 @@ func TestResolveEnabledDefaults(t *testing.T) {
 	}
 }
 
-func TestInjectDbDv2SeparateFromV1(t *testing.T) {
+func TestInjectDbDv1Profile(t *testing.T) {
 	v1, ok := GameStrategyByID("siz-loves-dbd-1")
 	if !ok {
 		t.Fatal("missing v1")
 	}
-	v2, ok := GameStrategyByID("siz-loves-dbd-2")
-	if !ok {
-		t.Fatal("missing v2")
+	if _, ok := GameStrategyByID("siz-loves-dbd-2"); ok {
+		t.Fatal("v2 must be removed")
 	}
-	if v2.DefaultOn {
-		t.Fatal("v2 must be off by default")
-	}
-	out := InjectGameStrategies([]string{"--wf-udp=443"}, `C:\Zapret`, []GameStrategy{v1, v2})
+	out := InjectGameStrategy([]string{"--wf-udp=443"}, `C:\Zapret`, v1)
 	joined := strings.Join(out, " ")
-	if strings.Count(joined, "--new") != 2 {
-		t.Fatalf("v1 and v2 must stay separate: %s", joined)
+	if !strings.Contains(joined, "quic_initial_www_google_com.bin") {
+		t.Fatalf("missing v1 fake: %s", joined)
 	}
-	if !strings.Contains(joined, "quic_initial_dbankcloud_ru.bin") {
-		t.Fatalf("missing v2 fake: %s", joined)
+	if strings.Contains(joined, "dbankcloud") {
+		t.Fatal("v1 must keep the google QUIC fake")
 	}
 	if !strings.Contains(joined, "--dpi-desync-autottl=6") {
 		t.Fatalf("missing autottl=6: %s", joined)
 	}
-	if !strings.Contains(joined, "--dpi-desync-repeats=12") {
-		t.Fatalf("missing repeats=12: %s", joined)
+	if !strings.Contains(joined, "--dpi-desync-repeats=6") {
+		t.Fatalf("missing repeats=6: %s", joined)
 	}
 	if !strings.Contains(joined, "--dpi-desync-cutoff=n4") {
 		t.Fatalf("missing cutoff=n4: %s", joined)
 	}
-	if strings.Contains(joined, "udplen") || strings.Contains(joined, "ipfrag") {
-		t.Fatal("v2 must stay fake-only like v1")
-	}
-	if strings.Contains(joined, "hopbyhop") {
-		t.Fatal("hopbyhop must not be used on winws")
-	}
-}
-
-func TestResolveEnabledDbDV2ReplacesV1(t *testing.T) {
-	got := ResolveEnabled(map[string]bool{
-		"siz-loves-dbd-1":           true,
-		"siz-loves-dbd-2":           true,
-		"siz-loves-rocket-league-1": false,
-	})
-	if len(got) != 1 || got[0].ID != "siz-loves-dbd-2" {
-		t.Fatalf("v2 must replace v1: %+v", got)
+	if strings.Contains(joined, "udplen") || strings.Contains(joined, "ipfrag") || strings.Contains(joined, "hopbyhop") {
+		t.Fatalf("unexpected desync extras: %s", joined)
 	}
 }
 

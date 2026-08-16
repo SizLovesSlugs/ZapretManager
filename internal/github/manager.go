@@ -18,6 +18,61 @@ func NewManager() *Client {
 	return c
 }
 
+type ManagerAsset struct {
+	Tag    string
+	Name   string
+	URL    string
+	Digest string
+}
+
+type apiRelease struct {
+	TagName string     `json:"tag_name"`
+	Assets  []apiAsset `json:"assets"`
+}
+
+type apiAsset struct {
+	Name               string `json:"name"`
+	BrowserDownloadURL string `json:"browser_download_url"`
+	Digest             string `json:"digest"`
+}
+
+func pickManagerExe(assets []apiAsset) (apiAsset, bool) {
+	var fallback apiAsset
+	var hasFallback bool
+	for _, a := range assets {
+		name := strings.ToLower(strings.TrimSpace(a.Name))
+		if !strings.HasSuffix(name, ".exe") || a.BrowserDownloadURL == "" {
+			continue
+		}
+		if strings.Contains(name, "zapret") && strings.Contains(name, "manager") {
+			return a, true
+		}
+		if !hasFallback {
+			fallback = a
+			hasFallback = true
+		}
+	}
+	return fallback, hasFallback
+}
+
+// LatestManagerAsset is the exe from GitHub /releases/latest, including its sha256 digest.
+func (c *Client) LatestManagerAsset(ctx context.Context) (ManagerAsset, error) {
+	var rel apiRelease
+	if err := c.getJSON(ctx, c.apiRoot()+"/repos/"+c.repo()+"/releases/latest", &rel); err != nil {
+		return ManagerAsset{}, err
+	}
+	a, ok := pickManagerExe(rel.Assets)
+	if !ok {
+		return ManagerAsset{}, nil
+	}
+	return ManagerAsset{
+		Tag:    strings.TrimPrefix(strings.TrimSpace(rel.TagName), "v"),
+		Name:   a.Name,
+		URL:    a.BrowserDownloadURL,
+		Digest: NormalizeDigest(a.Digest),
+	}, nil
+}
+
 var exeAssetRe = regexp.MustCompile(`(?i)/releases/download/([^"'?#\s]+)/([^"'?#\s]+\.exe)`)
 
 func parseExeDownloadURLs(page, site, repo string) []string {
@@ -78,34 +133,4 @@ func uniqueURLs(in []string) []string {
 		out = append(out, u)
 	}
 	return out
-}
-
-// LatestManagerRelease returns a newer manager version than current and candidate exe URLs.
-// If there is no newer release, version and urls are empty and err is nil.
-func (c *Client) LatestManagerRelease(ctx context.Context, current string) (string, []string, error) {
-	htmlPage, finalURL, err := c.getHTML(ctx, c.pageURL("/releases/latest"))
-	if err != nil {
-		return "", nil, err
-	}
-	tag := tagFromURL(finalURL, c.repo())
-	if tag == "" {
-		tags := parseTags(htmlPage, c.repo())
-		if len(tags) == 0 {
-			return "", nil, nil
-		}
-		tag = tags[0]
-	}
-	if version.Compare(tag, current) <= 0 {
-		return "", nil, nil
-	}
-
-	urls := conventionalExeURLs(c.site(), c.repo(), tag)
-	urls = append(urls, parseExeDownloadURLs(htmlPage, c.site(), c.repo())...)
-	for _, assetTag := range uniqueURLs([]string{tag, "v" + strings.TrimPrefix(tag, "v"), strings.ReplaceAll(tag, " ", "-")}) {
-		assetsPage, _, assetsErr := c.getHTML(ctx, c.pageURL("/releases/expanded_assets/"+assetTag))
-		if assetsErr == nil {
-			urls = append(urls, parseExeDownloadURLs(assetsPage, c.site(), c.repo())...)
-		}
-	}
-	return tag, uniqueURLs(urls), nil
 }

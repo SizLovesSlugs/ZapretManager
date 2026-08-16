@@ -30,10 +30,10 @@ func TestExeNameFor(t *testing.T) {
 	if got := ExeNameFor("v1.0"); got != "ZapretManager-1.0.exe" {
 		t.Fatalf("v-prefix: %q", got)
 	}
-	if got := ExeName(); got != "ZapretManager-1.1.5.exe" {
+	if got := ExeName(); got != "ZapretManager-1.1.6.exe" {
 		t.Fatalf("current: %q", got)
 	}
-	if got := ExeNameFor("1.1.5"); got != "ZapretManager-1.1.5.exe" {
-		t.Fatalf("1.1.5: %q", got)
+	if got := ExeNameFor("1.1.6"); got != "ZapretManager-1.1.6.exe" {
+		t.Fatalf("1.1.6: %q", got)
 	}
 }

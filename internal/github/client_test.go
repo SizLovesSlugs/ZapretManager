@@ -88,3 +88,13 @@ func TestLatestAndListFromPages(t *testing.T) {
 		t.Fatalf("content %q", got)
 	}
 }
+
+func TestSameDigest(t *testing.T) {
+	sum := "sha256:d7bed34756e818b2bf9ab60efd2b9ef4888214bc308e190e59ab67f21f31f0ed"
+	if !SameDigest(sum, "D7BED34756E818B2BF9AB60EFD2B9EF4888214BC308E190E59AB67F21F31F0ED") {
+		t.Fatal("bare hex should match")
+	}
+	if SameDigest(sum, "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa") {
+		t.Fatal("different digest")
+	}
+}

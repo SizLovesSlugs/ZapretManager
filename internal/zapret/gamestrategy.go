@@ -32,19 +32,8 @@ var builtinGameStrategies = []GameStrategy{
 		DefaultOn: true,
 		FakeUDP:   defaultFakeUDP,
 		Desync:    "fake",
-		AutoTTL:   "2",
-		Repeats:   6,
-		Cutoff:    "n2",
-	},
-	{
-		ID:        "siz-loves-dbd-2",
-		Name:      "Siz Loves DbD v2",
-		UDPPorts:  "7771-8000,61456,61457",
-		DefaultOn: false,
-		FakeUDP:   "quic_initial_dbankcloud_ru.bin",
-		Desync:    "fake",
 		AutoTTL:   "6",
-		Repeats:   12,
+		Repeats:   6,
 		Cutoff:    "n4",
 	},
 	{
@@ -97,27 +86,6 @@ func ResolveEnabled(enabled map[string]bool) []GameStrategy {
 		if on {
 			out = append(out, g)
 		}
-	}
-	return dropSupersededGames(out)
-}
-
-func dropSupersededGames(games []GameStrategy) []GameStrategy {
-	hasV2 := false
-	for _, g := range games {
-		if g.ID == "siz-loves-dbd-2" {
-			hasV2 = true
-			break
-		}
-	}
-	if !hasV2 {
-		return games
-	}
-	out := games[:0]
-	for _, g := range games {
-		if g.ID == "siz-loves-dbd-1" {
-			continue
-		}
-		out = append(out, g)
 	}
 	return out
 }

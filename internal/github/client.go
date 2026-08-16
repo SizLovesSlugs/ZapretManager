@@ -5,6 +5,7 @@ import (
 	"crypto/sha256"
 	"crypto/tls"
 	"encoding/hex"
+	"encoding/json"
 	"fmt"
 	"html"
 	"io"
@@ -26,6 +27,7 @@ type Client struct {
 	HTTP    *http.Client
 	Repo    string
 	BaseURL string
+	APIURL  string
 }
 
 func New() *Client {
@@ -96,6 +98,33 @@ func (c *Client) site() string {
 
 func (c *Client) pageURL(path string) string {
 	return c.site() + "/" + c.repo() + path
+}
+
+func (c *Client) apiRoot() string {
+	if c.APIURL != "" {
+		return strings.TrimRight(c.APIURL, "/")
+	}
+	return "https://api.github.com"
+}
+
+func (c *Client) getJSON(ctx context.Context, rawURL string, dest any) error {
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, rawURL, nil)
+	if err != nil {
+		return err
+	}
+	req.Header.Set("User-Agent", userAgent)
+	req.Header.Set("Accept", "application/vnd.github+json")
+	req.Header.Set("X-GitHub-Api-Version", "2022-11-28")
+	resp, err := c.HTTP.Do(req)
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode != http.StatusOK {
+		body, _ := io.ReadAll(io.LimitReader(resp.Body, 1024))
+		return fmt.Errorf("github api %s: %s", resp.Status, strings.TrimSpace(string(body)))
+	}
+	return json.NewDecoder(io.LimitReader(resp.Body, 2<<20)).Decode(dest)
 }
 
 func browserHeaders(req *http.Request) {
@@ -278,27 +307,49 @@ func (c *Client) Download(ctx context.Context, url, dest string, progress Progre
 	return os.Rename(tmp, dest)
 }
 
-func VerifySHA256(path, digest string) error {
-	digest = strings.TrimSpace(digest)
+func NormalizeDigest(digest string) string {
+	digest = strings.TrimSpace(strings.ToLower(digest))
 	if digest == "" {
-		return nil
+		return ""
 	}
-	want, ok := strings.CutPrefix(digest, "sha256:")
-	if !ok {
-		return nil
+	if hex, ok := strings.CutPrefix(digest, "sha256:"); ok {
+		return "sha256:" + strings.TrimSpace(hex)
 	}
+	if len(digest) == 64 {
+		return "sha256:" + digest
+	}
+	return digest
+}
+
+func SameDigest(a, b string) bool {
+	a, b = NormalizeDigest(a), NormalizeDigest(b)
+	return a != "" && a == b
+}
+
+func FileSHA256(path string) (string, error) {
 	f, err := os.Open(path)
 	if err != nil {
-		return err
+		return "", err
 	}
 	defer f.Close()
 	h := sha256.New()
 	if _, err := io.Copy(h, f); err != nil {
+		return "", err
+	}
+	return "sha256:" + hex.EncodeToString(h.Sum(nil)), nil
+}
+
+func VerifySHA256(path, digest string) error {
+	digest = NormalizeDigest(digest)
+	if digest == "" {
+		return nil
+	}
+	got, err := FileSHA256(path)
+	if err != nil {
 		return err
 	}
-	got := hex.EncodeToString(h.Sum(nil))
-	if !strings.EqualFold(got, want) {
-		return fmt.Errorf("checksum mismatch: got %s, want %s", got, want)
+	if !SameDigest(got, digest) {
+		return fmt.Errorf("checksum mismatch: got %s, want %s", got, digest)
 	}
 	return nil
 }

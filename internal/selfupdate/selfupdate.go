@@ -67,8 +67,8 @@ func waitNotBusy(ctx context.Context, busy func() bool) error {
 	return ctx.Err()
 }
 
-// Prepare silently checks GitHub and downloads a newer manager exe next to the running file.
-// The downloaded file is named for the new version, e.g. ZapretManager-1.1.5.exe.
+// Prepare silently checks GitHub latest exe sha256 and downloads it if different.
+// The downloaded file keeps the GitHub asset name, e.g. ZapretManager-1.1.6.exe.
 func Prepare(ctx context.Context, busy func() bool) (string, error) {
 	if !CanCheck() {
 		return "", nil
@@ -83,11 +83,18 @@ func Prepare(ctx context.Context, busy func() bool) (string, error) {
 	}
 
 	c := github.NewManager()
-	tag, urls, err := c.LatestManagerRelease(ctx, version.Version)
+	asset, err := c.LatestManagerAsset(ctx)
 	if err != nil {
 		return "", err
 	}
-	if tag == "" || len(urls) == 0 {
+	if asset.URL == "" || asset.Digest == "" {
+		return "", nil
+	}
+	local, err := github.FileSHA256(exe)
+	if err != nil {
+		return "", err
+	}
+	if github.SameDigest(local, asset.Digest) {
 		return "", nil
 	}
 
@@ -95,7 +102,11 @@ func Prepare(ctx context.Context, busy func() bool) (string, error) {
 		return "", err
 	}
 
-	dest := filepath.Join(filepath.Dir(exe), version.ExeNameFor(tag))
+	name := strings.TrimSpace(asset.Name)
+	if name == "" {
+		name = version.ExeNameFor(asset.Tag)
+	}
+	dest := filepath.Join(filepath.Dir(exe), name)
 	if strings.EqualFold(filepath.Clean(dest), filepath.Clean(exe)) {
 		dest = exe + ".new"
 	}
@@ -103,30 +114,27 @@ func Prepare(ctx context.Context, busy func() bool) (string, error) {
 	_ = os.Remove(tmp)
 	_ = os.Remove(dest)
 
-	var last error
-	for _, u := range urls {
-		if err := ctx.Err(); err != nil {
-			return "", err
-		}
-		if err := c.Download(ctx, u, tmp, nil); err != nil {
-			last = err
-			_ = os.Remove(tmp)
-			continue
-		}
-		if err := verifyPE(tmp); err != nil {
-			last = err
-			_ = os.Remove(tmp)
-			continue
-		}
-		_ = os.Remove(dest)
-		if err := os.Rename(tmp, dest); err != nil {
-			last = err
-			_ = os.Remove(tmp)
-			continue
-		}
-		return dest, nil
+	if err := ctx.Err(); err != nil {
+		return "", err
 	}
-	return "", last
+	if err := c.Download(ctx, asset.URL, tmp, nil); err != nil {
+		_ = os.Remove(tmp)
+		return "", err
+	}
+	if err := verifyPE(tmp); err != nil {
+		_ = os.Remove(tmp)
+		return "", err
+	}
+	if err := github.VerifySHA256(tmp, asset.Digest); err != nil {
+		_ = os.Remove(tmp)
+		return "", err
+	}
+	_ = os.Remove(dest)
+	if err := os.Rename(tmp, dest); err != nil {
+		_ = os.Remove(tmp)
+		return "", err
+	}
+	return dest, nil
 }
 
 func verifyPE(path string) error {

@@ -79,7 +79,7 @@
 Если Go уже установлен, можно так:
 
 ```bat
-go build -trimpath -ldflags "-H windowsgui -s -w" -o ZapretManager-1.1.5.exe ./cmd/zapret-manager
+go build -trimpath -ldflags "-H windowsgui -s -w" -o ZapretManager-1.1.6.exe ./cmd/zapret-manager
 ```
 
 ## 🩷 Благодарности

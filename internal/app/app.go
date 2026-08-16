@@ -470,14 +470,6 @@ func (a *App) SelectGameStrategy(id string) (State, error) {
 	}
 	next := !cur
 	a.cfg.GameStrategies[gs.ID] = next
-	if next {
-		switch gs.ID {
-		case "siz-loves-dbd-1":
-			a.cfg.GameStrategies["siz-loves-dbd-2"] = false
-		case "siz-loves-dbd-2":
-			a.cfg.GameStrategies["siz-loves-dbd-1"] = false
-		}
-	}
 	a.cfg.LastGameStrategy = ""
 	_ = saveConfig(a.cfg)
 	a.invalidateStateCache()
