@@ -131,6 +131,10 @@ func EnableService(root, strategyName string, games []GameStrategy) error {
 		args = InjectGameStrategies(args, root, games)
 	}
 
+	if err := waitWinDivertIdle(8 * time.Second); err != nil {
+		return err
+	}
+
 	exe := WinwsPath(root)
 	if _, err := os.Stat(exe); err != nil {
 		return fmt.Errorf("winws: %w", err)
@@ -268,6 +272,9 @@ func confirmServiceStayedUp(s *mgr.Service) error {
 				return fmt.Errorf("проверка службы: %w", err)
 			}
 			if st.State != svc.Running {
+				if err := winDivertStuckError(); err != nil {
+					return err
+				}
 				return fmt.Errorf("winws завершился сразу после запуска (статус %s). Часто это слишком широкий UDP-фильтр WinDivert или битая командная строка", stateName(st.State))
 			}
 			if !processRunning("winws.exe") {
@@ -364,20 +371,8 @@ func RemoveService(removeDriver bool) error {
 	_ = killProcess("winws.exe")
 	waitProcessGone("winws.exe", 2*time.Second)
 	if removeDriver {
-		for _, name := range []string{"WinDivert", "WinDivert14"} {
-			if s, err := m.OpenService(name); err == nil {
-				_, _ = s.Control(svc.Stop)
-				deadline := time.Now().Add(1500 * time.Millisecond)
-				for time.Now().Before(deadline) {
-					st, qerr := s.Query()
-					if qerr != nil || st.State == svc.Stopped {
-						break
-					}
-					time.Sleep(50 * time.Millisecond)
-				}
-				_ = s.Delete()
-				s.Close()
-			}
+		for _, name := range winDivertNames {
+			_ = stopAndDeleteService(m, name)
 		}
 	}
 	InvalidateServiceCache()

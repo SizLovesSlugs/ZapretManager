@@ -112,11 +112,11 @@ func TestInjectDbDv2SeparateFromV1(t *testing.T) {
 	if strings.Count(joined, "--new") != 2 {
 		t.Fatalf("v1 and v2 must stay separate: %s", joined)
 	}
-	if !strings.Contains(joined, "--dpi-desync=fake,ipfrag2") {
+	if !strings.Contains(joined, "--dpi-desync=fake,udplen") {
 		t.Fatalf("missing v2 desync: %s", joined)
 	}
-	if strings.Contains(joined, "udplen") {
-		t.Fatal("udplen+ipfrag2 is an invalid winws combo")
+	if strings.Contains(joined, "ipfrag") {
+		t.Fatal("ipfrag2 must not be used: it can wedge WinDivert")
 	}
 	if strings.Count(v2.Desync, ",") > 1 {
 		t.Fatalf("winws allows at most two desync modes, got %q", v2.Desync)
@@ -124,8 +124,8 @@ func TestInjectDbDv2SeparateFromV1(t *testing.T) {
 	if !strings.Contains(joined, "--dpi-desync-ttl=1") {
 		t.Fatalf("missing ttl=1: %s", joined)
 	}
-	if !strings.Contains(joined, "--dpi-desync-ipfrag-pos-udp=8") {
-		t.Fatalf("missing ipfrag pos: %s", joined)
+	if !strings.Contains(joined, "--dpi-desync-udplen-increment=2") {
+		t.Fatalf("missing udplen increment: %s", joined)
 	}
 	if strings.Contains(joined, "hopbyhop") {
 		t.Fatal("hopbyhop must not be used on winws")

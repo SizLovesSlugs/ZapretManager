@@ -37,20 +37,18 @@ var builtinGameStrategies = []GameStrategy{
 		Cutoff:    "n2",
 	},
 	{
-		// winws accepts one phase-1 mode plus one phase-2 mode.
-		// fake+udplen+ipfrag2 is invalid and winws exits on start.
-		// fake,ipfrag2 mutates the original UDP datagram so a TSPU
-		// that ignores a plain QUIC fake still has to reassemble fragments.
+		// One phase-1 + one phase-2 only. ipfrag2 can leave WinDivert
+		// stuck STOP_PENDING; udplen mutates the original datagram.
 		ID:        "siz-loves-dbd-2",
 		Name:      "Siz Loves DbD v2",
 		UDPPorts:  "7771-8000,61456,61457",
 		DefaultOn: false,
 		FakeUDP:   defaultFakeUDP,
-		Desync:    "fake,ipfrag2",
+		Desync:    "fake,udplen",
 		TTL:       "1",
-		Repeats:   10,
+		Repeats:   11,
 		Cutoff:    "n4",
-		IPFragPos: 8,
+		UDPLenInc: 2,
 	},
 	{
 		ID:        "siz-loves-rocket-league-1",
