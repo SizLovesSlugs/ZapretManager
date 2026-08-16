@@ -2,8 +2,11 @@ package zapret
 
 import (
 	"path/filepath"
+	"strconv"
 	"strings"
 )
+
+const defaultFakeUDP = "quic_initial_www_google_com.bin"
 
 // GameStrategy is injected into the main winws arg list as an extra --new block.
 type GameStrategy struct {
@@ -12,6 +15,13 @@ type GameStrategy struct {
 	UDPPorts  string `json:"udpPorts"`
 	DefaultOn bool   `json:"defaultOn"`
 	FakeUDP   string `json:"-"` // filename under bin/
+	Desync    string `json:"-"`
+	AutoTTL   string `json:"-"`
+	TTL       string `json:"-"`
+	Repeats   int    `json:"-"`
+	Cutoff    string `json:"-"`
+	UDPLenInc int    `json:"-"`
+	IPFragPos int    `json:"-"`
 }
 
 var builtinGameStrategies = []GameStrategy{
@@ -20,14 +30,38 @@ var builtinGameStrategies = []GameStrategy{
 		Name:      "Siz Loves DbD v1",
 		UDPPorts:  "7771-8000,61456,61457",
 		DefaultOn: true,
-		FakeUDP:   "quic_initial_www_google_com.bin",
+		FakeUDP:   defaultFakeUDP,
+		Desync:    "fake",
+		AutoTTL:   "2",
+		Repeats:   6,
+		Cutoff:    "n2",
+	},
+	{
+		// OpenWRT original used hopbyhop6,fake. winws has no hopbyhop6;
+		// fake+udplen+ipfrag2 with TTL=1 is the Windows stand-in for TSPU
+		// that ignores a plain QUIC fake (Коломна and similar).
+		ID:        "siz-loves-dbd-2",
+		Name:      "Siz Loves DbD v2",
+		UDPPorts:  "7771-8000,61456,61457",
+		DefaultOn: false,
+		FakeUDP:   defaultFakeUDP,
+		Desync:    "fake,udplen,ipfrag2",
+		TTL:       "1",
+		Repeats:   10,
+		Cutoff:    "n4",
+		UDPLenInc: 2,
+		IPFragPos: 8,
 	},
 	{
 		ID:        "siz-loves-rocket-league-1",
 		Name:      "Siz Loves Rocket League v1",
 		UDPPorts:  "7700-8100,7000-9000,3400-3500,4300-4400,27000-27100,12000-13000",
 		DefaultOn: true,
-		FakeUDP:   "quic_initial_www_google_com.bin",
+		FakeUDP:   defaultFakeUDP,
+		Desync:    "fake",
+		AutoTTL:   "2",
+		Repeats:   6,
+		Cutoff:    "n2",
 	},
 }
 
@@ -90,33 +124,63 @@ func InjectGameStrategy(args []string, root string, g GameStrategy) []string {
 	return InjectGameStrategies(args, root, []GameStrategy{g})
 }
 
+func (g GameStrategy) normalized() GameStrategy {
+	if g.FakeUDP == "" {
+		g.FakeUDP = defaultFakeUDP
+	}
+	if g.Desync == "" {
+		g.Desync = "fake"
+	}
+	if g.Repeats <= 0 {
+		g.Repeats = 6
+	}
+	if g.Cutoff == "" {
+		g.Cutoff = "n2"
+	}
+	if g.AutoTTL == "" && g.TTL == "" {
+		g.AutoTTL = "2"
+	}
+	return g
+}
+
+func (g GameStrategy) profileKey() string {
+	g = g.normalized()
+	return strings.Join([]string{
+		g.FakeUDP,
+		g.Desync,
+		g.AutoTTL,
+		g.TTL,
+		strconv.Itoa(g.Repeats),
+		g.Cutoff,
+		strconv.Itoa(g.UDPLenInc),
+		strconv.Itoa(g.IPFragPos),
+	}, "|")
+}
+
 func mergeGameGroups(games []GameStrategy) []GameStrategy {
 	type acc struct {
 		g     GameStrategy
 		ports []string
 	}
 	order := make([]string, 0, len(games))
-	byFake := map[string]*acc{}
+	byProfile := map[string]*acc{}
 	for _, g := range games {
 		ports := compactPortCSV(g.UDPPorts)
 		if ports == "" {
 			continue
 		}
-		fake := g.FakeUDP
-		if fake == "" {
-			fake = "quic_initial_www_google_com.bin"
-		}
-		if cur, ok := byFake[fake]; ok {
+		g = g.normalized()
+		key := g.profileKey()
+		if cur, ok := byProfile[key]; ok {
 			cur.ports = append(cur.ports, ports)
 			continue
 		}
-		g.FakeUDP = fake
-		byFake[fake] = &acc{g: g, ports: []string{ports}}
-		order = append(order, fake)
+		byProfile[key] = &acc{g: g, ports: []string{ports}}
+		order = append(order, key)
 	}
 	out := make([]GameStrategy, 0, len(order))
-	for _, fake := range order {
-		cur := byFake[fake]
+	for _, key := range order {
+		cur := byProfile[key]
 		cur.g.UDPPorts = compactPortCSV(strings.Join(cur.ports, ","))
 		out = append(out, cur.g)
 	}
@@ -124,15 +188,31 @@ func mergeGameGroups(games []GameStrategy) []GameStrategy {
 }
 
 func appendGameDesync(args []string, root string, g GameStrategy) []string {
+	g = g.normalized()
 	fakePath := filepath.Join(BinDir(root), g.FakeUDP)
-	return append(args,
+	out := append(args,
 		"--new",
 		"--filter-udp="+g.UDPPorts,
-		"--dpi-desync=fake",
-		"--dpi-desync-autottl=2",
-		"--dpi-desync-repeats=6",
+		"--dpi-desync="+g.Desync,
+	)
+	if g.TTL != "" {
+		out = append(out, "--dpi-desync-ttl="+g.TTL)
+	}
+	if g.AutoTTL != "" {
+		out = append(out, "--dpi-desync-autottl="+g.AutoTTL)
+	}
+	out = append(out,
+		"--dpi-desync-repeats="+strconv.Itoa(g.Repeats),
 		"--dpi-desync-any-protocol=1",
+	)
+	if g.UDPLenInc > 0 {
+		out = append(out, "--dpi-desync-udplen-increment="+strconv.Itoa(g.UDPLenInc))
+	}
+	if g.IPFragPos > 0 {
+		out = append(out, "--dpi-desync-ipfrag-pos-udp="+strconv.Itoa(g.IPFragPos))
+	}
+	return append(out,
 		"--dpi-desync-fake-unknown-udp="+fakePath,
-		"--dpi-desync-cutoff=n2",
+		"--dpi-desync-cutoff="+g.Cutoff,
 	)
 }

@@ -38,9 +38,14 @@ func TestInjectGameStrategy(t *testing.T) {
 func TestInjectGameStrategiesMultiple(t *testing.T) {
 	root := `C:\Zapret`
 	args := []string{"--wf-udp=443"}
-	games := GameStrategies()
+	var games []GameStrategy
+	for _, g := range GameStrategies() {
+		if g.DefaultOn {
+			games = append(games, g)
+		}
+	}
 	if len(games) < 2 {
-		t.Fatal("expected at least two builtin game strategies")
+		t.Fatal("expected at least two default-on game strategies")
 	}
 	out := InjectGameStrategies(args, root, games)
 	joined := strings.Join(out, " ")
@@ -75,12 +80,49 @@ func TestInjectGameStrategiesMultiple(t *testing.T) {
 
 func TestResolveEnabledDefaults(t *testing.T) {
 	got := ResolveEnabled(nil)
-	if len(got) != len(GameStrategies()) {
-		t.Fatalf("defaults: %d", len(got))
+	want := 0
+	for _, g := range GameStrategies() {
+		if g.DefaultOn {
+			want++
+		}
+	}
+	if len(got) != want {
+		t.Fatalf("defaults: %d want %d", len(got), want)
 	}
 	got = ResolveEnabled(map[string]bool{got[0].ID: false})
-	if len(got) != len(GameStrategies())-1 {
+	if len(got) != want-1 {
 		t.Fatalf("one off: %d", len(got))
+	}
+}
+
+func TestInjectDbDv2SeparateFromV1(t *testing.T) {
+	v1, ok := GameStrategyByID("siz-loves-dbd-1")
+	if !ok {
+		t.Fatal("missing v1")
+	}
+	v2, ok := GameStrategyByID("siz-loves-dbd-2")
+	if !ok {
+		t.Fatal("missing v2")
+	}
+	if v2.DefaultOn {
+		t.Fatal("v2 must be off by default")
+	}
+	out := InjectGameStrategies([]string{"--wf-udp=443"}, `C:\Zapret`, []GameStrategy{v1, v2})
+	joined := strings.Join(out, " ")
+	if strings.Count(joined, "--new") != 2 {
+		t.Fatalf("v1 and v2 must stay separate: %s", joined)
+	}
+	if !strings.Contains(joined, "--dpi-desync=fake,udplen,ipfrag2") {
+		t.Fatalf("missing v2 desync: %s", joined)
+	}
+	if !strings.Contains(joined, "--dpi-desync-ttl=1") {
+		t.Fatalf("missing ttl=1: %s", joined)
+	}
+	if !strings.Contains(joined, "--dpi-desync-ipfrag-pos-udp=8") {
+		t.Fatalf("missing ipfrag pos: %s", joined)
+	}
+	if strings.Contains(joined, "hopbyhop") {
+		t.Fatal("hopbyhop must not be used on winws")
 	}
 }
 

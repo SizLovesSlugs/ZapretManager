@@ -68,7 +68,7 @@ func waitNotBusy(ctx context.Context, busy func() bool) error {
 }
 
 // Prepare silently checks GitHub and downloads a newer manager exe next to the running file.
-// The downloaded file is named for the new version, e.g. ZapretManager-1.1.1.exe.
+// The downloaded file is named for the new version, e.g. ZapretManager-1.1.2.exe.
 func Prepare(ctx context.Context, busy func() bool) (string, error) {
 	if !CanCheck() {
 		return "", nil
