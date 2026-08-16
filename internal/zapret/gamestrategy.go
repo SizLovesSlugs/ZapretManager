@@ -43,9 +43,9 @@ var builtinGameStrategies = []GameStrategy{
 		DefaultOn: true,
 		FakeUDP:   defaultFakeUDP,
 		Desync:    "fake",
-		AutoTTL:   "2",
+		AutoTTL:   "6",
 		Repeats:   6,
-		Cutoff:    "n2",
+		Cutoff:    "n4",
 	},
 }
 

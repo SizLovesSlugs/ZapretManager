@@ -49,8 +49,8 @@ func TestInjectGameStrategiesMultiple(t *testing.T) {
 	}
 	out := InjectGameStrategies(args, root, games)
 	joined := strings.Join(out, " ")
-	if strings.Count(joined, "--new") != 2 {
-		t.Fatalf("DbD and RL profiles differ, expected two --new: %s", joined)
+	if strings.Count(joined, "--new") != 1 {
+		t.Fatalf("same desync should merge into one --new: %s", joined)
 	}
 	wf := strings.TrimPrefix(out[0], "--wf-udp=")
 	if strings.Contains(wf, "3400-61457") || strings.Contains(wf, "1024-65535") {
@@ -61,13 +61,13 @@ func TestInjectGameStrategiesMultiple(t *testing.T) {
 			t.Fatalf("wf-udp %s does not cover %d", wf, port)
 		}
 	}
-	var filters []string
+	var filter string
 	for _, a := range out {
 		if strings.HasPrefix(a, "--filter-udp=") {
-			filters = append(filters, strings.TrimPrefix(a, "--filter-udp="))
+			filter = strings.TrimPrefix(a, "--filter-udp=")
+			break
 		}
 	}
-	filter := strings.Join(filters, ",")
 	for _, port := range []int{3400, 7777, 8500, 12500, 27000, 61457} {
 		if !portCSVCovers(filter, port) {
 			t.Fatalf("filter-udp %s does not cover %d", filter, port)
@@ -75,6 +75,9 @@ func TestInjectGameStrategiesMultiple(t *testing.T) {
 	}
 	if strings.Contains(filter, "7700-8100") {
 		t.Fatalf("overlapping 7700-8100 should be absorbed: %s", filter)
+	}
+	if !strings.Contains(joined, "--dpi-desync-autottl=6") || !strings.Contains(joined, "--dpi-desync-cutoff=n4") {
+		t.Fatalf("merged profile should match DbD: %s", joined)
 	}
 }
 
