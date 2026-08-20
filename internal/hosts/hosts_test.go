@@ -108,6 +108,34 @@ func TestBuildProfileBlockDedupesHosts(t *testing.T) {
 	}
 }
 
+func TestParseProxiesJSON(t *testing.T) {
+	list, err := parseProxiesJSON(defaultProxiesJSON)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(list) < 2 {
+		t.Fatalf("proxies=%d", len(list))
+	}
+	var def Proxy
+	for _, p := range list {
+		if p.Default {
+			def = p
+			break
+		}
+	}
+	if def.IP != DefaultProxyIP {
+		t.Fatalf("default ip=%s want %s", def.IP, DefaultProxyIP)
+	}
+	if def.IP != "45.88.174.254" {
+		t.Fatalf("unexpected default proxy %s", def.IP)
+	}
+	for _, p := range list {
+		if p.IP == "95.182.120.241" || p.IP == "45.155.204.190" {
+			t.Fatalf("retired proxy still shipped: %s", p.IP)
+		}
+	}
+}
+
 func TestExtraProfilesDefaults(t *testing.T) {
 	on := 0
 	for _, p := range ExtraProfiles() {

@@ -2,6 +2,7 @@ package hosts
 
 import (
 	"bytes"
+	"crypto/tls"
 	_ "embed"
 	"encoding/json"
 	"fmt"
@@ -17,9 +18,10 @@ var defaultProxiesJSON []byte
 
 const (
 	ProxyToken     = "PROXY"
-	DefaultProxyIP = "95.182.120.241"
+	DefaultProxyIP = "45.88.174.254"
 	proxyProbePort = "443"
-	proxyProbeWait = 1500 * time.Millisecond
+	proxyProbeSNI  = "chatgpt.com"
+	proxyProbeWait = 2500 * time.Millisecond
 )
 
 type Proxy struct {
@@ -128,7 +130,7 @@ func PingProxies() []ProxyStatus {
 		wg.Add(1)
 		go func(i int, p Proxy) {
 			defer wg.Done()
-			ok, ms := ProbeTCP(p.IP, proxyProbePort, proxyProbeWait)
+			ok, ms := ProbeTLS(p.IP, proxyProbePort, proxyProbeSNI, proxyProbeWait)
 			out[i] = ProxyStatus{
 				ID:      p.ID,
 				Name:    p.Name,
@@ -152,6 +154,31 @@ func ProbeTCP(ip, port string, timeout time.Duration) (bool, int) {
 	}
 	_ = conn.Close()
 	return true, ms
+}
+
+// ProbeTLS dials :443 and completes a TLS handshake with SNI.
+// TCP open is not enough: GeoHide reverse proxies often accept 443 then RST HTTPS.
+func ProbeTLS(ip, port, sni string, timeout time.Duration) (bool, int) {
+	start := time.Now()
+	dialer := net.Dialer{Timeout: timeout}
+	raw, err := dialer.Dial("tcp", net.JoinHostPort(ip, port))
+	if err != nil {
+		return false, -1
+	}
+	defer raw.Close()
+	_ = raw.SetDeadline(start.Add(timeout))
+	cfg := &tls.Config{
+		MinVersion:         tls.VersionTLS12,
+		ServerName:         sni,
+		InsecureSkipVerify: true,
+		NextProtos:         []string{"http/1.1"},
+	}
+	conn := tls.Client(raw, cfg)
+	if err := conn.Handshake(); err != nil {
+		return false, -1
+	}
+	_ = conn.Close()
+	return true, int(time.Since(start).Milliseconds())
 }
 
 func loadProxies() ([]Proxy, error) {

@@ -88,8 +88,8 @@ func ApplyAll(enabled map[string]bool, proxyIP string) error {
 		if err := os.WriteFile(path, []byte(content), 0o644); err != nil {
 			return fmt.Errorf("запись hosts: %w", err)
 		}
-		flushDNS()
 	}
+	flushDNS()
 	syncIPv4Preference(content)
 	return nil
 }

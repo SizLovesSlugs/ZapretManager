@@ -694,9 +694,18 @@ func (a *App) SetGeoProxy(ip string) (State, error) {
 	a.mu.Lock()
 	a.cfg.GeoProxy = ip
 	_ = saveConfig(a.cfg)
+	enabled := a.cfg.hostsEnabledMap()
 	a.mu.Unlock()
-	if err := a.syncHostsToServiceState(); err != nil {
+	// Hosts rewrite is the actual proxy switch; do it even if zapret is stopped,
+	// and do not wait on a winws restart (hostlist domains are unchanged).
+	if err := hosts.ApplyAll(enabled, ip); err != nil {
 		return a.fail("GeoHide Proxy: " + err.Error())
+	}
+	dir := zapret.DefaultInstallDir()
+	if serviceActive(zapret.QueryService()) {
+		if _, err := zapret.SyncBoostHostlist(dir, hosts.EnabledDomains(enabled)); err != nil {
+			return a.fail("GeoHide Proxy: " + err.Error())
+		}
 	}
 	name := ip
 	if p, ok := hosts.ProxyByIP(ip); ok {
