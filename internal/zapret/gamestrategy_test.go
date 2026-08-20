@@ -117,8 +117,8 @@ func TestInjectDbDv1Profile(t *testing.T) {
 	if !strings.Contains(joined, "--dpi-desync-autottl=6") {
 		t.Fatalf("missing autottl=6: %s", joined)
 	}
-	if !strings.Contains(joined, "--dpi-desync-repeats=6") {
-		t.Fatalf("missing repeats=6: %s", joined)
+	if !strings.Contains(joined, "--dpi-desync-repeats=12") {
+		t.Fatalf("missing repeats=12: %s", joined)
 	}
 	if !strings.Contains(joined, "--dpi-desync-cutoff=n4") {
 		t.Fatalf("missing cutoff=n4: %s", joined)

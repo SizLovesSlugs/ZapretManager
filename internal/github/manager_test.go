@@ -33,10 +33,10 @@ func TestLatestManagerAsset(t *testing.T) {
 	mux.HandleFunc("/repos/SizLovesSlugs/ZapretManager/releases/latest", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		_ = json.NewEncoder(w).Encode(apiRelease{
-			TagName: "1.1.6",
+			TagName: "1.1.7",
 			Assets: []apiAsset{{
-				Name:               "ZapretManager-1.1.6.exe",
-				BrowserDownloadURL: "https://github.com/SizLovesSlugs/ZapretManager/releases/download/1.1.6/ZapretManager-1.1.6.exe",
+				Name:               "ZapretManager-1.1.7.exe",
+				BrowserDownloadURL: "https://github.com/SizLovesSlugs/ZapretManager/releases/download/1.1.7/ZapretManager-1.1.7.exe",
 				Digest:             "sha256:d7bed34756e818b2bf9ab60efd2b9ef4888214bc308e190e59ab67f21f31f0ed",
 			}},
 		})
@@ -52,7 +52,7 @@ func TestLatestManagerAsset(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if got.Tag != "1.1.6" || got.Name != "ZapretManager-1.1.6.exe" {
+	if got.Tag != "1.1.7" || got.Name != "ZapretManager-1.1.7.exe" {
 		t.Fatalf("%+v", got)
 	}
 	if !SameDigest(got.Digest, "D7BED34756E818B2BF9AB60EFD2B9EF4888214BC308E190E59AB67F21F31F0ED") {

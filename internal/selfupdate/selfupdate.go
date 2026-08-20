@@ -68,7 +68,7 @@ func waitNotBusy(ctx context.Context, busy func() bool) error {
 }
 
 // Prepare silently checks GitHub latest exe sha256 and downloads it if different.
-// The downloaded file keeps the GitHub asset name, e.g. ZapretManager-1.1.6.exe.
+// The downloaded file keeps the GitHub asset name, e.g. ZapretManager-1.1.7.exe.
 func Prepare(ctx context.Context, busy func() bool) (string, error) {
 	if !CanCheck() {
 		return "", nil

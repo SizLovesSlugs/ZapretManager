@@ -33,7 +33,7 @@ var builtinGameStrategies = []GameStrategy{
 		FakeUDP:   defaultFakeUDP,
 		Desync:    "fake",
 		AutoTTL:   "6",
-		Repeats:   6,
+		Repeats:   12,
 		Cutoff:    "n4",
 	},
 	{
@@ -44,7 +44,7 @@ var builtinGameStrategies = []GameStrategy{
 		FakeUDP:   defaultFakeUDP,
 		Desync:    "fake",
 		AutoTTL:   "6",
-		Repeats:   6,
+		Repeats:   12,
 		Cutoff:    "n4",
 	},
 }
@@ -116,7 +116,7 @@ func (g GameStrategy) normalized() GameStrategy {
 		g.Desync = "fake"
 	}
 	if g.Repeats <= 0 {
-		g.Repeats = 6
+		g.Repeats = 12
 	}
 	if g.Cutoff == "" {
 		g.Cutoff = "n2"
